@@ -8,7 +8,10 @@ using namespace sdcard;
 
 
 SdCard::SdCard(Inkplate& display)
-    :   mDisplay(display)
+    :   mDisplay(display),
+        mInitialized(false),
+        mFileOpen(false),
+        mFileSystem(display.getSdFat())
 {
     mInitialized = static_cast<bool>(display.sdCardInit());
     if (!mInitialized)
@@ -19,6 +22,10 @@ SdCard::SdCard(Inkplate& display)
 
 SdCard::~SdCard()
 {
+    if (mFileOpen)
+    {
+        mFile.close();
+    }
     sleep(mDisplay);
 }
 
@@ -28,53 +35,113 @@ void SdCard::sleep(Inkplate& display)
     display.sdCardSleep();
 }
 
-void SdCard::getJsonFile(JsonDocument& jsonDocument, const char* const fileName)
+std::string SdCard::findFileWithPrefix(const std::string& dirPath, const std::string& prefix)
+{
+    std::string foundName;
+    auto pathComponents = getPathComponents(dirPath);
+    std::string path = "/";
+    for (auto& component : pathComponents)
+    {
+        path += component;
+        auto exists = mFileSystem.exists(path.c_str());
+        if (!exists)
+        {
+            Serial.println("File's path does not exist");
+            return foundName;
+        }
+    }
+    // Directory exists
+    mFileSystem.chdir(path.c_str());
+    File dir, file;
+    dir.open(path.c_str(), O_RDONLY);
+    while(file.openNext(&dir, O_RDONLY))
+    {
+        std::string candidateFilename(file.name());
+        if (candidateFilename.rfind(prefix) != std::string::npos)
+        {
+            foundName = candidateFilename;
+            break;
+        }
+    }
+    file.close();
+    dir.close();
+    return foundName;
+}
+
+bool SdCard::openFile(const std::string& filePath)
 {
     if (!mInitialized)
     {
         Serial.println("Cannot read file because the SD Card could not be initialized");
-        return;
+        return false;
+    }
+    if (mFileOpen)
+    {
+        Serial.printf("Closing open file before opening %s\n", filePath.c_str());
+        mFile.close();
     }
 
-    SdFile file;
-    Serial.printf("Opening file %s\n", fileName);
+    Serial.printf("Opening file %s\n", filePath.c_str());
     auto sd = mDisplay.getSdFat();
-    if (!sd.exists(fileName))
+    if (!sd.exists(filePath.c_str()))
     {
         Serial.println("File does not exist");
+        return false;
     }
-    else if (!file.open(fileName, O_RDONLY))
+
+    if (!mFile.open(filePath.c_str(), O_RDONLY))
     {
         Serial.println("File open error");
+        return false;
     }
-    else
+    mFileOpen = true;
+    return true;
+}
+
+bool SdCard::readJsonFile(JsonDocument& jsonDocument, const std::string& filePath)
+{
+    bool success = openFile(filePath);
+    if (!success) {
+        return false;
+    }
+    auto jError = deserializeJson(jsonDocument, mFile);
+    if (jError != DeserializationError::Ok)
     {
-        size_t fileSizeBytes = file.fileSize();
-        std::string content;
-        content.reserve(fileSizeBytes);
-        // null the buffer because file size might be a bit too large and I was seeing garbage at the end of the buffer.
-        content.replace(0, fileSizeBytes, fileSizeBytes, 0);
-        file.read(&content[0], fileSizeBytes);
-        auto jError = deserializeJson(jsonDocument, content.c_str(), fileSizeBytes);
-        if (jError != DeserializationError::Ok)
-        {
-            Serial.printf("Failed to load %s from SD card with error %d\n", fileName, jError);
-        }
-        else
-        {
-            Serial.println("content deserialized to json object");
+        Serial.printf("Failed to load %s from SD card with error %d\n", filePath, jError);
+        return false;
+    }
+    Serial.println("content deserialized to json object");
+    return true;
+}
+
+
+bool SdCard::getFakeCurrentData(JsonDocument& apiResponse)
+{
+    return readJsonFile(apiResponse, "/current.json");
+}
+
+bool SdCard::getFakeForecastData(JsonDocument& apiResponse)
+{
+    return readJsonFile(apiResponse, "/daily.json");
+}
+
+std::vector<std::string> getPathComponents(const std::string& path)
+{
+    std::string component;
+    std::vector<std::string> components;
+    for (auto &character : path) {
+        if (character == '/' || character == '\\') {
+            if (component.size() == 0)
+            {
+                continue;
+            }
+            components.emplace_back(component);
+            component.clear();
         }
     }
-    file.close();
-}
-
-
-void SdCard::getFakeCurrentData(JsonDocument& apiResponse)
-{
-    getJsonFile(apiResponse, "/current.json");
-}
-
-void SdCard::getFakeForecastData(JsonDocument& apiResponse)
-{
-    getJsonFile(apiResponse, "/daily.json");
+    if (component.size() != 0)
+    {
+        components.emplace_back(component);
+    }
+    return components;
 }

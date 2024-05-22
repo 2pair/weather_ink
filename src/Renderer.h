@@ -12,6 +12,7 @@ class Renderer {
     public:
         Renderer(Inkplate& display, const char* city);
         void update(const weather::Weather& weatherData);
+        void render();
 
     private:
         enum LevelOfDetail {

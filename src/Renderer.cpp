@@ -73,6 +73,10 @@ void Renderer::update(const weather::Weather& weatherData)
     //drawTime();
 }
 
+void Renderer::render() {
+    mDisplay.display();
+}
+
 // Function for drawing weather info
 void Renderer::drawConditions(const weather::DailyWeather& currentConditions)
 {
@@ -126,8 +130,8 @@ void Renderer::drawLocation()
 void Renderer::drawTemps(const weather::DailyWeather& currentConditions)
 {
     // Drawing 4 black rectangles in which temperatures will be written
-    int height = 150;
-    int width = 225;
+    int height = 175;
+    int width = 370;
     int spacing = (600 - height * 3) / 4;
 
     mDisplay.fillRect(20, 1 * spacing + 0 * height, 20 + width, height, 6);

@@ -7,15 +7,16 @@
 
 #include "../local_env.h"
 
+
 using namespace network;
 
-Network::Network(const char *ssid, const char *pass, const char* apiKey, const int8_t timeZone)
+Network::Network(const std::string& ssid, const std::string& pass, const std::string& apiKey, const int8_t timeZone)
     :   mApiKey(apiKey),
         mTimeZone(timeZone)
 {
     WiFi.mode(WIFI_STA);
     WiFi.setSleep(false);
-    WiFi.begin(ssid, pass);
+    WiFi.begin(ssid.c_str(), pass.c_str());
     WiFi.setAutoReconnect(true);
     waitForConnection(60);
     if (isConnected())
@@ -49,7 +50,7 @@ void Network::waitForConnection(const uint8_t waitTimeSec)
     Serial.println(F("failure"));
 }
 
-bool Network::apiGetResponse(JsonDocument& apiResponse, const char * url)
+bool Network::apiGetResponse(JsonDocument& apiResponse, const std::string& url)
 {
     if (!isConnected())
     {
@@ -59,7 +60,7 @@ bool Network::apiGetResponse(JsonDocument& apiResponse, const char * url)
     HTTPClient http;
     http.getStream().setNoDelay(true);
     http.getStream().setTimeout(1);
-    http.begin(url);
+    http.begin(url.c_str());
 
     int httpCode = http.GET();
     bool validData = false;
@@ -72,7 +73,7 @@ bool Network::apiGetResponse(JsonDocument& apiResponse, const char * url)
             if (error)
             {
                 Serial.print(F("deserializeJson() failed for url: "));
-                Serial.print(url);
+                Serial.print(url.c_str());
                 Serial.printf((char *)F(" error: %s\n"), error.c_str());
                 validData = false;
             }
@@ -116,14 +117,13 @@ void Network::setTimeNTP()
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
     Serial.print(F("Waiting for NTP time sync: "));
-    time_t nowSecs = time(nullptr);
-    while (nowSecs < 8 * 3600 * 2)
-    {
-        // Print a dot every half a second while time is not set
-        delay(500);
-        Serial.printf("%d .. ", nowSecs);
+    time_t nowSecs;
+    do {
+        // Wait for time to be set
+        delay(1000);
         nowSecs = time(nullptr);
-    }
+        Serial.printf("%d.. ", nowSecs);
+    } while (nowSecs < 8 * 3600 * 2);
 
     Serial.println();
 

@@ -3,6 +3,9 @@
     "Wrong board configured. Select e-radionica Inkplate6 or Soldered Inkplate6 in the boards menu."
 #endif
 
+#include <Inkplate.h>
+#include <ArduinoJson.h>
+
 // Defines all data on the location, network, and API key
 #include "local_env.h"
 
@@ -11,9 +14,7 @@
 #include "src/Weather.h"
 #include "src/WeatherProvider/OpenWeatherMap.h"
 #include "src/Renderer.h"
-
-#include <Inkplate.h>
-#include <ArduinoJson.h>
+#include "src/DailyWeather.h"
 
 #define MAX(a, b) a > b ? a : b
 
@@ -47,8 +48,6 @@ void setup()
         updateIntervalSeconds
     );
     Serial.printf("last forecast time: %d\n", lastForecastTime);
-    display.println("Here");
-    display.println(F("We Go"));
 }
 
 void loop()
@@ -59,13 +58,11 @@ void loop()
         // Gotta get online!
         return;
     }
-
-    JsonDocument jsonResponse;
     bool updated = false;
     // Update forecast only once per day to reduce API calls
     if (time(nullptr) > lastForecastTime + secondsPerDay)
     {
-        bool success = weatherData.updateForecast(jsonResponse, connection);
+        bool success = weatherData.updateForecast(connection);
         if (success)
         {
             lastForecastTime = time(nullptr);
@@ -76,25 +73,23 @@ void loop()
         {
             Serial.println("Failed to fetch forecast data");
         }
-        jsonResponse.clear();
     }
 
-    bool success = weatherData.updateCurrent(jsonResponse, connection);
+    bool success = weatherData.updateCurrent(connection);
     if (success)
     {
         Serial.println("Current weather updated");
-        printCurrentConditions(jsonResponse);
+        weatherData.printDailyWeather(weatherData.getDailyWeather(0));
         updated = true;
     }
     else
     {
         Serial.println("Failed to fetch current weather data");
     }
-    jsonResponse.clear();
 
     renderer::Renderer renderer(display, city);
     renderer.update(weatherData);
-    display.display();
+    renderer.render();
 
     //connection.getTime(currentTime);
     if (updated)
@@ -104,23 +99,4 @@ void loop()
         display.sdCardSleep();
         esp_deep_sleep_start();
     }
-}
-
-void printCurrentConditions(const JsonDocument& jsonResponse) {
-    Serial.print("Condition code: ");
-    Serial.println(jsonResponse["weather"][0]["id"].as<int>());
-    Serial.print("Condition: ");
-    Serial.println(jsonResponse["weather"][0]["main"].as<const char*>());
-    Serial.print("Description: ");
-    Serial.println(jsonResponse["weather"][0]["description"].as<const char*>());
-    Serial.print("Temp: ");
-    Serial.println(jsonResponse["main"]["temp"].as<float>());
-    Serial.print("Wind speed: ");
-    Serial.println(jsonResponse["wind"]["speed"].as<float>());
-    Serial.print("unix timestamp: ");
-    Serial.println(jsonResponse["dt"].as<int64_t>());
-    Serial.print("Timezone: ");
-    Serial.println(jsonResponse["timezone"].as<int>());
-    Serial.print("City: ");
-    Serial.println(jsonResponse["name"].as<const char*>());
 }

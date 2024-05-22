@@ -27,6 +27,7 @@ namespace precipitation
 {
 enum Type
 {
+    unknown,
     none,
     rain,
     snow
@@ -35,28 +36,31 @@ enum Type
 
 struct DailyWeather
 {
-    uint64_t timestamp;
+    uint64_t timestamp = 0;
 
-    float tempNow;
-    float feelsLike;
-    float tempLow;
-    float tempHigh;
+    float tempNow = 0.0;
+    float feelsLike = 0.0;
+    float tempLow = 0.0;
+    float tempHigh = 0.0;
 
-    Condition condition;
-    precipitation::Type precipitationType;
-    float precipitation;
+    Condition condition = Condition::unknown;
+    precipitation::Type precipitationType = precipitation::Type::unknown;
+    float precipitation = 0.0;
 
-    float humidity;
-    float pressure;
-    float visibility;
+    float humidity = 0.0;
+    float pressure = 0.0;
+    float visibility = 0.0;
 
-    float windSpeed;
-    float gustSpeed;
-    float windDirection;
+    float windSpeed = 0.0;
+    float gustSpeed = 0.0;
+    float windDirection = 0.0;
 
-    uint64_t sunrise;
-    uint64_t sunset;
+    uint64_t sunrise = 0;
+    uint64_t sunset = 0;
 };
 
-}
+const char* conditionToString(const Condition condition);
 
+const char* precipitationToString(const precipitation::Type precipitation);
+
+}

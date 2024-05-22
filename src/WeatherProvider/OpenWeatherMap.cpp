@@ -9,27 +9,25 @@
 
 using namespace weatherprovider;
 
-void OpenWeatherMap::getCurrentWeatherUrl(char * buffer, uint8_t bufferLen)
+std::string OpenWeatherMap::getCurrentWeatherUrl()
 {
-    sprintf(
-        buffer,
-        (char *)F("https://api.openweathermap.org/data/2.5/weather?lat=%.4f&lon=%.4f&appid=%s&units=imperial"),
-        mLatitude,
-        mLongitude,
-        mApiKey
-    );
+    return std::string(
+        (char *)F("https://api.openweathermap.org/data/2.5/weather?lat=%.4f&lon=%.4f&appid=%s&units=imperial")
+    ) +
+    std::to_string(mLatitude) +
+    std::to_string(mLongitude) +
+    std::string(mApiKey);
 }
 
-void OpenWeatherMap::getForecastedWeatherUrl(char * buffer, uint8_t bufferLen)
+std::string OpenWeatherMap::getForecastedWeatherUrl()
 {
-    sprintf(
-        buffer,
-        (char *)F("https://api.openweathermap.org/data/2.5/forecast/daily?lat=%f&lon=%f&cnt=%d&appid=%s&units=imperial"),
-        mLatitude,
-        mLongitude,
-        5,
-        mApiKey
-    );
+    return std::string(
+        (char *)F("https://api.openweathermap.org/data/2.5/forecast/daily?lat=%f&lon=%f&cnt=%d&appid=%s&units=imperial")
+    ) +
+    std::to_string(mLatitude) +
+    std::to_string(mLongitude) +
+    std::to_string(5) +
+    std::string(mApiKey);
 }
 
 void OpenWeatherMap::toCurrentWeather(
@@ -38,6 +36,7 @@ void OpenWeatherMap::toCurrentWeather(
 {
     using namespace weather;
 
+    currentWeather.timestamp = currentApiResponse["dt"];
     currentWeather.tempNow = currentApiResponse["main"]["temp"];
     currentWeather.feelsLike = currentApiResponse["main"]["feels_like"];
     // These are actually current local low/high, not daily
@@ -52,7 +51,7 @@ void OpenWeatherMap::toCurrentWeather(
     currentWeather.gustSpeed = currentApiResponse["wind"]["gust"];
     currentWeather.windDirection = currentApiResponse["wind"]["deg"];
 
-    auto code =  currentApiResponse["weather"][0]["id"].as<uint16_t>();
+    const uint16_t code =  currentApiResponse["weather"][0]["id"];
     codeToConditions(currentWeather, code);
 
     if (currentWeather.precipitationType == precipitation::Type::rain) {
@@ -66,28 +65,32 @@ void OpenWeatherMap::toCurrentWeather(
     else {
         currentWeather.precipitation = 0.0;
     }
+        Serial.println("JSON successfully converted to current weather");
 }
 
 uint8_t OpenWeatherMap::toForecastedWeather(
-    weather::DailyWeather* forecastedWeather,
-    const uint8_t maxDays,
+    std::vector<weather::DailyWeather>& forecastedWeather,
     JsonDocument& forecastApiResponse)
 {
     using namespace weather;
 
-    auto days_returned = forecastApiResponse["cnt"].as<uint8_t>();
+    size_t daysReturned = forecastApiResponse["cnt"];
     uint64_t lastDt = 0;
-    for (int i = 0; i < std::min(maxDays, days_returned); i ++) {
-        DailyWeather& dailyWeather = forecastedWeather[i];
-        auto dailyData = forecastApiResponse["list"][i];
+    auto minDays = std::min(forecastedWeather.size(), daysReturned);
+    size_t index = -1;
+    for( auto iter = forecastedWeather.begin(); iter <= forecastedWeather.begin() + minDays; iter++ )
+    {
+        index++;
+        DailyWeather& dailyWeather = *iter;
+        auto dailyData = forecastApiResponse["list"][index];
 
         // delete if API data order has been validated
         uint64_t dt = dailyData["dt"];
         if (dt <= lastDt) {
-            Serial.print("WARNING: Weather data was not in chronological order from API");
+            Serial.print("WARNING: Weather data was not in chronological order from API\n");
         }
         lastDt = dt;
-        // end delete
+        // end delete^^
 
         dailyWeather.tempLow = dailyData["temp"]["min"];
         dailyWeather.tempHigh = dailyData["temp"]["max"];
@@ -96,10 +99,12 @@ uint8_t OpenWeatherMap::toForecastedWeather(
         dailyWeather.sunset = dailyData["sunset"];
 
 
-        if (i == 0) {
-            // Don't need any other data from this API for today
+        if (index == 0) {
+            // Don't need any other data from this API for the current day
             continue;
         }
+
+        dailyWeather.timestamp = dailyData["dt"];
 
         uint16_t code = dailyData["weather"][0]["id"];
         codeToConditions(dailyWeather, code);
@@ -122,6 +127,8 @@ uint8_t OpenWeatherMap::toForecastedWeather(
         dailyWeather.gustSpeed = dailyData["gust"];
         dailyWeather.windDirection = dailyData["deg"];
     }
+    Serial.println("JSON successfully converted to forecasted weather");
+    return minDays;
 }
 
 void OpenWeatherMap::codeToConditions(

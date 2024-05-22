@@ -2,10 +2,12 @@
 
 #include <stdint.h>
 #include <string>
+#include <vector>
 
 #include <ArduinoJson.h>
 
 #include "../DailyWeather.h"
+
 
 namespace weatherprovider {
 
@@ -27,17 +29,16 @@ class WeatherProvider
                 mApiKey(apiKey)
             {}
 
-        virtual void getCurrentWeatherUrl(char * buffer, uint8_t bufferLen) = 0;
+        virtual std::string getCurrentWeatherUrl() = 0;
 
-        virtual  void getForecastedWeatherUrl(char * buffer, uint8_t bufferLen) = 0;
+        virtual  std::string getForecastedWeatherUrl() = 0;
 
         virtual void toCurrentWeather(
             weather::DailyWeather& currentWeather,
             JsonDocument& currentApiResponse) = 0;
 
         virtual uint8_t toForecastedWeather(
-            weather::DailyWeather* forecastedWeather,
-            const uint8_t maxDays,
+            std::vector<weather::DailyWeather>& forecastedWeather,
             JsonDocument& forecastApiResponse) = 0;
 
     protected:

@@ -18,17 +18,16 @@ class OpenWeatherMap : public WeatherProvider
 
         using WeatherProvider::WeatherProvider;
 
-        void getCurrentWeatherUrl(char * buffer, uint8_t bufferLen) override;
+        std::string getCurrentWeatherUrl() override;
 
-        void getForecastedWeatherUrl(char * buffer, uint8_t bufferLen) override;
+        std::string getForecastedWeatherUrl() override;
 
         void toCurrentWeather(
             weather::DailyWeather& currentWeather,
             JsonDocument& currentApiResponse) override;
 
         uint8_t toForecastedWeather(
-            weather::DailyWeather* forecastedWeather,
-            const uint8_t maxDays,
+            std::vector<weather::DailyWeather>& forecastedWeather,
             JsonDocument& forecastApiResponse) override;
 
     protected:

@@ -13,16 +13,27 @@ class SdCard
 
         ~SdCard();
 
-        void getJsonFile(JsonDocument& jsonDocument, const char* const fileName);
+        bool openFile(const std::string& filePath);
 
-        void getFakeCurrentData(JsonDocument& apiResponse);
+        // Returns the file
+        std::string findFileWithPrefix(const std::string& dirPath, const std::string& prefix);
 
-        void getFakeForecastData(JsonDocument& apiResponse);
+        bool readJsonFile(JsonDocument& jsonDocument, const std::string& filePath);
+
+        bool getFakeCurrentData(JsonDocument& apiResponse);
+
+        bool getFakeForecastData(JsonDocument& apiResponse);
 
         static void sleep(Inkplate& display);
 
     private:
         Inkplate& mDisplay;
         bool mInitialized;
+        File mFile;
+        bool mFileOpen;
+        SdFat mFileSystem;
 };
+
+std::vector<std::string> getPathComponents(const std::string& path);
+
 }
