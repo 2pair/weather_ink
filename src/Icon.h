@@ -2,6 +2,9 @@
 
 #include <Inkplate.h>
 
+namespace weather {
+    class DailyWeather;
+}
 
 namespace icon {
 
@@ -23,21 +26,26 @@ The files should be stored based on size in /icons/<size_pixels>/<icon_name>_<si
 class Icon
 {
     public:
-        Icon(Inkplate& display, const char* const iconName);
+        Icon(Inkplate& display, const std::string& iconName);
 
-        // Draw the icon centered at point (x,y) at given size
+        // Draw the icon centered at point (x,y) with given size
         void draw(size_t x, size_t y, Size size);
 
+        // Get the base name for an icon representing the given conditions
+        static const std::string getIconNameForConditions(const weather::DailyWeather& conditions);
+
     private:
-        std::string getPath(Size size) const;
+        const std::string getPath(Size size) const;
 
         std::pair<size_t, size_t> getDimensions(Size size) const;
 
+        // TODO: This could instead be a list of valid sizes.
+        bool mExists;
         std::string mIconName;
-        Inkplate mDisplay;
+        Inkplate& mDisplay;
         std::string mExtension;
 
-        static constexpr char cIconsDir[] = "/icons";
+        static const std::string cIconsDir;
 };
 
 }

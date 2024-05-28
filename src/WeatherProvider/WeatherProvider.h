@@ -6,6 +6,7 @@
 
 #include <ArduinoJson.h>
 
+#include "../WeatherTypes.h"
 #include "../DailyWeather.h"
 
 
@@ -21,36 +22,36 @@ class WeatherProvider
         WeatherProvider(
             const float latitude,
             const float longitude,
-            const char* city,
-            const char* apiKey)
+            const std::string& city,
+            const std::string& apiKey)
             :   mLatitude(latitude),
                 mLongitude(longitude),
                 mCity(city),
                 mApiKey(apiKey)
             {}
 
-        virtual std::string getCurrentWeatherUrl() = 0;
+        virtual std::string getCurrentWeatherUrl() const = 0;
 
-        virtual  std::string getForecastedWeatherUrl() = 0;
+        virtual  std::string getForecastedWeatherUrl() const = 0;
 
         virtual void toCurrentWeather(
             weather::DailyWeather& currentWeather,
-            JsonDocument& currentApiResponse) = 0;
+            JsonDocument& currentApiResponse) const = 0;
 
         virtual uint8_t toForecastedWeather(
-            std::vector<weather::DailyWeather>& forecastedWeather,
-            JsonDocument& forecastApiResponse) = 0;
+            weather::daily_forecast& forecastedWeather,
+            JsonDocument& forecastApiResponse) const = 0;
 
     protected:
         // Normalize condition codes to internal representation
         virtual void codeToConditions(
             weather::DailyWeather& dailyWeather,
-            const uint16_t code) = 0;
+            const uint16_t code) const = 0;
 
         const float mLatitude;
         const float mLongitude;
-        const char* mCity;
-        const char* mApiKey;
+        const std::string mCity;
+        const std::string mApiKey;
 };
 
 }

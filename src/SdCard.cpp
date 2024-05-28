@@ -1,5 +1,8 @@
 #include "SdCard.h"
 
+#include <string>
+#include <vector>
+
 #include <Inkplate.h>
 #include <ArduinoJson.h>
 
@@ -37,33 +40,55 @@ void SdCard::sleep(Inkplate& display)
 
 std::string SdCard::findFileWithPrefix(const std::string& dirPath, const std::string& prefix)
 {
+    bool success;
     std::string foundName;
-    auto pathComponents = getPathComponents(dirPath);
-    std::string path = "/";
-    for (auto& component : pathComponents)
-    {
-        path += component;
-        auto exists = mFileSystem.exists(path.c_str());
-        if (!exists)
-        {
-            Serial.println("File's path does not exist");
-            return foundName;
-        }
+    std::string path;
+    if (*dirPath.begin() != '/') {
+        path += '/';
     }
-    // Directory exists
-    mFileSystem.chdir(path.c_str());
+    path += dirPath;
+
+    if (!mFileSystem.exists(path.c_str()))
+    {
+        Serial.printf((const char*)F("\nCould not find file. File's path (%s) does not exist\n"), path.c_str());
+        return foundName;
+    }
+    if (!mFileSystem.chdir(path.c_str()))
+    {
+        Serial.printf((const char*)F("Failed to open directory %s\n"), path.c_str());
+        return foundName;
+    }
+
     File dir, file;
-    dir.open(path.c_str(), O_RDONLY);
+    success = dir.open(path.c_str(), O_RDONLY);
+    if (!success)
+    {
+        Serial.printf((const char*)F("Failed to attach fh directory %s\n"), path.c_str());
+        return foundName;
+    }
+    auto pixelSize = getPathComponents(dirPath).back();
+    // prefix length + _ + pixels + . + extension + \0 (assumes ext max of 4 char)
+    // getName requires at least 13 bytes.
+    size_t iconNameLength = prefix.size() + 1 + pixelSize.size() + 6;
+    size_t bufLen = std::max(iconNameLength, 13U);
+    std::string baseName = prefix + "_" + pixelSize;
     while(file.openNext(&dir, O_RDONLY))
     {
-        std::string candidateFilename(file.name());
-        if (candidateFilename.rfind(prefix) != std::string::npos)
+        std::string candidateFilename(bufLen, '\0');
+        if (
+            file.getName(&candidateFilename[0], candidateFilename.size()) &&
+            candidateFilename.rfind(prefix, 0) != std::string::npos
+        )
         {
             foundName = candidateFilename;
+        }
+
+        file.close();
+        if (!foundName.empty())
+        {
             break;
         }
     }
-    file.close();
     dir.close();
     return foundName;
 }
@@ -72,26 +97,28 @@ bool SdCard::openFile(const std::string& filePath)
 {
     if (!mInitialized)
     {
-        Serial.println("Cannot read file because the SD Card could not be initialized");
+        Serial.println(F("Cannot read file because the SD Card could not be initialized"));
         return false;
     }
     if (mFileOpen)
     {
-        Serial.printf("Closing open file before opening %s\n", filePath.c_str());
-        mFile.close();
+        Serial.printf((const char *)F("Closing open file before opening %s\n"), filePath.c_str());
+        if (!mFile.close())
+        {
+            Serial.println(F("Failed to close file!"));
+        }
     }
 
-    Serial.printf("Opening file %s\n", filePath.c_str());
-    auto sd = mDisplay.getSdFat();
-    if (!sd.exists(filePath.c_str()))
+    Serial.printf((const char *)F("Opening file %s\n"), filePath.c_str());
+    if (!mFileSystem.exists(filePath.c_str()))
     {
-        Serial.println("File does not exist");
+        Serial.println(F("File does not exist"));
         return false;
     }
 
     if (!mFile.open(filePath.c_str(), O_RDONLY))
     {
-        Serial.println("File open error");
+        Serial.println(F("File open error"));
         return false;
     }
     mFileOpen = true;
@@ -107,41 +134,45 @@ bool SdCard::readJsonFile(JsonDocument& jsonDocument, const std::string& filePat
     auto jError = deserializeJson(jsonDocument, mFile);
     if (jError != DeserializationError::Ok)
     {
-        Serial.printf("Failed to load %s from SD card with error %d\n", filePath, jError);
+        Serial.printf((const char *)F("Failed to load %s from SD card with error %d\n"), filePath, jError);
         return false;
     }
-    Serial.println("content deserialized to json object");
+    Serial.println(F("content deserialized to json object"));
     return true;
 }
 
 
 bool SdCard::getFakeCurrentData(JsonDocument& apiResponse)
 {
-    return readJsonFile(apiResponse, "/current.json");
+    return readJsonFile(apiResponse, (const char *)F("/current.json"));
 }
 
 bool SdCard::getFakeForecastData(JsonDocument& apiResponse)
 {
-    return readJsonFile(apiResponse, "/daily.json");
+    return readJsonFile(apiResponse, (const char *)F("/daily.json"));
 }
 
-std::vector<std::string> getPathComponents(const std::string& path)
+std::vector<std::string> sdcard::getPathComponents(const std::string& path)
 {
-    std::string component;
     std::vector<std::string> components;
+    components.emplace_back();
     for (auto &character : path) {
         if (character == '/' || character == '\\') {
-            if (component.size() == 0)
-            {
-                continue;
-            }
-            components.emplace_back(component);
-            component.clear();
+            components.emplace_back();
+            continue;
         }
+        components.back() += character;
     }
-    if (component.size() != 0)
+
+    // remove empty components (ie: if the path had // in it)
+    auto iter = components.begin();
+    while (iter != components.end())
     {
-        components.emplace_back(component);
+        if (iter->empty())
+        {
+            components.erase(iter);
+        }
+        ++iter;
     }
     return components;
 }

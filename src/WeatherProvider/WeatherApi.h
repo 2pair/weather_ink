@@ -5,14 +5,15 @@
 #include <ArduinoJson.h>
 
 #include "WeatherProvider.h"
+#include "../WeatherTypes.h"
 #include "../DailyWeather.h"
 
 
 namespace weatherprovider
 {
 
-// Gets weather information from openweathermap.org
-class OpenWeatherMap : public WeatherProvider
+// Gets weather information from weatherapi.com
+class WeatherApi : public WeatherProvider
 {
     public:
         static constexpr uint32_t monthlyApiCallLimit = 1000;
@@ -32,7 +33,7 @@ class OpenWeatherMap : public WeatherProvider
             JsonDocument& forecastApiResponse) const override;
 
     protected:
-        // https://openweathermap.org/weather-conditions
+        // https://www.weatherapi.com/docs/weather_conditions.json
         void codeToConditions(
             weather::DailyWeather& dailyWeather,
             const uint16_t code) const override;

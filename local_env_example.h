@@ -14,9 +14,12 @@ static constexpr float lon = 78.910;
 static constexpr char ssid[] = "";
 static constexpr char pass[] = "";
 
-// Your api key, if you don't have one, head over to:
+// Your api key:
 // https://openweathermap.org/guide , register and copy the key provided
-static constexpr char apiKey[] = "";
+static constexpr char apiKeyOpenWeatherMap[] = "";
+
+// https://www.weatherapi.com , register and copy the key provided
+static constexpr char apiKeyWeatherApip[] = "";
 
 // If true, read json files from the SD card instead of querying the API
-static const bool cFakeAPIUpdates = true;
+static constexpr bool cFakeAPIUpdates = true;

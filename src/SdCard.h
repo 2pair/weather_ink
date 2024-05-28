@@ -31,7 +31,7 @@ class SdCard
         bool mInitialized;
         File mFile;
         bool mFileOpen;
-        SdFat mFileSystem;
+        SdFat& mFileSystem;
 };
 
 std::vector<std::string> getPathComponents(const std::string& path);

@@ -1,11 +1,12 @@
 #include "DailyWeather.h"
 
+#include <string>
 #include <WString.h>
 
 
 using namespace weather;
 
-const char* weather::conditionToString(const Condition condition)
+const std::string  weather::conditionToString(const Condition condition)
 {
     switch(condition) {
         case clear:
@@ -22,6 +23,10 @@ const char* weather::conditionToString(const Condition condition)
             return (const char *)F("Light Rain");
         case rain:
             return (const char *)F("Rain");
+        case heavyRain:
+            return (const char *)F("Heavy Rain");
+        case lightning:
+            return (const char *)F("Lightning");
         case thunderstorm:
             return (const char *)F("Thunderstorm");
         case freezingRain:
@@ -30,13 +35,17 @@ const char* weather::conditionToString(const Condition condition)
             return (const char *)F("Sleet");
         case snow:
             return (const char *)F("Snow");
-        case unknown:
+        case wintryMix:
+            return (const char *)F("Wintry Mix");
+        case windy:
+            return (const char *)F("Windy");
+        case unknownCondition:
         default:
             return (const char *)F("Unknown Conditions");
     }
 }
 
-const char* weather::precipitationToString(const precipitation::Type precipitation)
+const std::string weather::precipitationToString(const precipitation::Type precipitation)
 {
     switch(precipitation) {
         case precipitation::none:
@@ -49,4 +58,17 @@ const char* weather::precipitationToString(const precipitation::Type precipitati
         default:
             return (const char *)F("Unknown");
     }
+}
+
+const bool weather::conditionIsWindy(const DailyWeather& dailyWeather)
+{
+    return
+    dailyWeather.condition == Condition::windy ||
+    (
+        (
+            dailyWeather.condition == Condition::clear ||
+            dailyWeather.condition == Condition::partlyCloudy
+        ) &&
+        dailyWeather.windSpeed >= 20 // mph
+    );
 }

@@ -1,4 +1,5 @@
 # local
+*.code-workspace
 build/**
 **/local_env.h
 .vs
