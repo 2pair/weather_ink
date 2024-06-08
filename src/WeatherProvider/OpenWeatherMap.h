@@ -15,9 +15,11 @@ namespace weatherprovider
 class OpenWeatherMap : public WeatherProvider
 {
     public:
-        static constexpr uint32_t monthlyApiCallLimit = 1000;
-
         using WeatherProvider::WeatherProvider;
+
+        size_t getWeatherUpdateIntervalSeconds() const override;
+
+        size_t getForecastUpdateIntervalSeconds() const override;
 
         std::string getCurrentWeatherUrl() const override;
 
@@ -31,13 +33,21 @@ class OpenWeatherMap : public WeatherProvider
             weather::daily_forecast& forecastedWeather,
             JsonDocument& forecastApiResponse) const override;
 
+        uint8_t toHourlyWeather(
+            weather::hourly_forecast& forecastedWeather,
+            JsonDocument& forecastApiResponse) const override;
+
+        std::string getFileSystemDirectory() const override;
+
     protected:
         // https://openweathermap.org/weather-conditions
-        void codeToConditions(
-            weather::DailyWeather& dailyWeather,
-            const uint16_t code) const override;
+         weather::Condition codeToConditions(const uint16_t code) const override;
 
         static const std::string cBaseUrl;
+
+        static constexpr size_t cWeatherUpdateIntervalSeconds = 7200;
+        static constexpr size_t cForecastUpdateIntervalSeconds = 86400;
+        static const std::string cFsDirectory;
 };
 
 }

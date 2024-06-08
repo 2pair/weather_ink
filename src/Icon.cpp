@@ -11,9 +11,9 @@ using namespace icon;
 const std::string Icon::cIconsDir = (const char*)F("/icons");
 
 Icon::Icon(Inkplate& display, const std::string&  iconName)
-    :   mIconName(iconName),
-        mDisplay(display),
-        mExists(false)
+    :   mExists(false),
+        mIconName(iconName),
+        mDisplay(display)
 {
     sdcard::SdCard sdCard(mDisplay);
     auto fileName = sdCard.findFileWithPrefix(
@@ -22,7 +22,6 @@ Icon::Icon(Inkplate& display, const std::string&  iconName)
     );
     if (fileName.empty())
     {
-        Serial.printf((const char*)F("Icon %s does not exist\n"), mIconName.c_str());
         return;
     }
     mExists = true;
@@ -33,12 +32,26 @@ Icon::Icon(Inkplate& display, const std::string&  iconName)
     }
     else
     {
-        Serial.println(F("Found file did not have an extension, assuming PNG"));
+        Serial.println(F("WARNING: Found file did not have an extension, assuming PNG"));
         mExtension = "png";
     }
 }
 
 void Icon::draw(size_t x, size_t y, Size size)
+{
+    auto iconPath = getPath(size);
+    // Enables SD card device for just this scope
+    sdcard::SdCard sdCard(mDisplay);
+    mDisplay.drawImage(
+        iconPath.c_str(),
+        x,
+        y,
+        true,
+        false
+    );
+}
+
+void Icon::drawCentered(size_t x, size_t y, Size size)
 {
     size_t x_top_left, y_top_left;
     size_t width, height;
@@ -46,56 +59,84 @@ void Icon::draw(size_t x, size_t y, Size size)
     x_top_left = x - (width / 2);
     y_top_left = y - (height / 2);
 
-    auto iconPath = getPath(size);
-    Serial.printf("Drawing icon from path %s\n", iconPath.c_str());
-    mDisplay.drawImage(
-        iconPath.c_str(),
-        x_top_left,
-        y_top_left,
-        true,
-        false
-    );
-    Serial.println("draw success");
+    draw(x_top_left, y_top_left, size);
 }
 
 const std::string Icon::getIconNameForConditions(const weather::DailyWeather& conditions)
 {
     using namespace weather;
+
+    // Get Moon icons only if this is todays weather and its nighttime.
+    // The timestamp for the current weather will be in the past.
+    bool getMoonPhase = conditions.timestamp < time(nullptr) && isNightTime(conditions);
+
     switch (conditions.condition)
     {
         case Condition::clear:
-            return (const char *)F("sunny");
+            if (getMoonPhase) {
+                return (const char *)F("clr") + getMoonPhaseAbbreviation(conditions.moonPhase);
+            }
+            return (const char *)F("clr");
         case Condition::partlyCloudy:
-            return (const char *)F("party_cloudy");
+            if (getMoonPhase) {
+                return (const char *)F("pcd") + getMoonPhaseAbbreviation(conditions.moonPhase);
+            }
+            return (const char *)F("pcd");
         case Condition::cloudy:
-            return (const char *)F("cloudy");
+            return (const char *)F("cd");
         case Condition::foggy:
-            return (const char *)F("foggy");
+            return (const char *)F("fog");
         case Condition::drizzle:
-            return (const char *)F("light_rain");
+            return (const char *)F("dzl");
         case Condition::lightRain:
-            return (const char *)F("light_rain");
+            return (const char *)F("lrn");
         case Condition::rain:
-            return (const char *)F("rain");
+            return (const char *)F("rn");
         case Condition::heavyRain:
-            return (const char *)F("heavy_rain");
+            return (const char *)F("hrn");
         case Condition::lightning:
-            return (const char *)F("lightning");
+            return (const char *)F("lng");
         case Condition::thunderstorm:
-            return (const char *)F("lightning_rain");
+            return (const char *)F("tst");
         case Condition::freezingRain:
-            return (const char *)F("freezing_rain");
+            return (const char *)F("frn");
         case Condition::sleet:
-            return (const char *)F("sleet");
+            return (const char *)F("slt");
         case Condition::snow:
-            return (const char *)F("snow");
+            return (const char *)F("sno");
         case Condition::wintryMix:
-            return (const char *)F("wintry_mix");
+            return (const char *)F("wmx");
         case Condition::windy:
-            return (const char *)F("windy");
+            return (const char *)F("wnd");
         case Condition::unknownCondition:
         default:
-            return (const char *)F("unknown");
+            return (const char *)F("undef");
+    }
+}
+
+const std::string Icon::getMoonPhaseAbbreviation(const weather::MoonPhase& moonPhase)
+{
+    using namespace weather;
+    switch(moonPhase) {
+        case MoonPhase::newMoon:
+            return (const char *)F("nm");
+        case MoonPhase::waxingCrescent:
+            return (const char *)F("xc");
+        case MoonPhase::firstQuarter:
+            return (const char *)F("fq");
+        case MoonPhase::waxingGibbous:
+            return (const char *)F("xg");
+        case MoonPhase::fullMoon:
+            return (const char *)F("fm");
+        case MoonPhase::waningGibbous:
+            return (const char *)F("wg");
+        case MoonPhase::thirdQuarter:
+            return (const char *)F("tq");
+        case MoonPhase::waningCrescent:
+            return (const char *)F("wc");
+        case MoonPhase::unknownPhase:
+        default:
+            return "";
     }
 }
 
@@ -107,24 +148,42 @@ const std::string Icon::getPath(Size size) const
     auto size_str = std::to_string(width);
     return
         cIconsDir + (const char*)F("/") + size_str + (const char*)F("/") +
-        mIconName + (const char*)F("_") + size_str + (const char*)F(".") + mExtension;
+        mIconName  + size_str + (const char*)F(".") + mExtension;
 }
 
 std::pair<size_t, size_t> Icon::getDimensions(Size size) const
 {
     switch (size)
     {
-        case s_50x50:
+        case Size::s_50x50:
             return std::make_pair(50, 50);
-        case s_75x75:
+        case Size::s_75x75:
             return std::make_pair(75, 75);
-        case s_100x100:
+        case Size::s_100x100:
             return std::make_pair(100, 100);
-        case s_150x150:
+        case Size::s_150x150:
             return std::make_pair(150, 150);
-        case s_300x300:
+        case Size::s_300x300:
             return std::make_pair(300, 300);
         default:
             return std::make_pair(0, 0);
     }
+}
+
+bool Icon::exists() const
+{
+    return mExists;
+}
+
+icon::Icon icon::iconFactory(Inkplate& display, const weather::DailyWeather& conditions)
+{
+    icon::Icon weatherIcon(display, icon::Icon::getIconNameForConditions(conditions));
+    if (!weatherIcon.exists())
+    {
+        Serial.printf(
+            (const char*)F("Icon %s does not exist\n"),
+            conditionToString(conditions.condition).c_str()
+        );
+    }
+    return weatherIcon;
 }

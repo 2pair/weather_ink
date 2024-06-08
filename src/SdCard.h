@@ -20,11 +20,11 @@ class SdCard
 
         bool readJsonFile(JsonDocument& jsonDocument, const std::string& filePath);
 
-        bool getFakeCurrentData(JsonDocument& apiResponse);
-
-        bool getFakeForecastData(JsonDocument& apiResponse);
+        bool getFakeWeatherData(JsonDocument& apiResponse, const std::string& path);
 
         static void sleep(Inkplate& display);
+
+        inline SdFat& getLib() {return mFileSystem;};
 
     private:
         Inkplate& mDisplay;

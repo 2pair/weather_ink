@@ -1,3 +1,7 @@
+// Disabling HTTP 1.1 to avoid getting chunked data
+#undef HTTPCLIENT_1_1_COMPATIBLE
+#define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
+
 #include "Network.h"
 
 #include <Inkplate.h>
@@ -5,14 +9,14 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 
-#include "../local_env.h"
+#include "TimeUtils.h"
 
 
 using namespace network;
 
-Network::Network(const std::string& ssid, const std::string& pass, const int8_t timeZone)
-    :   mTimeZone(timeZone)
+Network::Network(const std::string& ssid, const std::string& pass)
 {
+    WiFi.mode(WIFI_MODE_NULL);
     WiFi.useStaticBuffers(true);
     WiFi.persistent(true);
     WiFi.mode(WIFI_STA);
@@ -33,6 +37,7 @@ Network::~Network()
 
 void Network::shutDown() {
     WiFi.disconnect(false, false);
+    WiFi.mode(WIFI_MODE_NULL);
     WiFi.setSleep(true);
 }
 
@@ -69,36 +74,43 @@ void Network::waitForConnection(const uint8_t waitTimeSec)
     Serial.println(F(" failure"));
 }
 
-bool Network::apiGetResponse(JsonDocument& apiResponse, const std::string& url)
+bool Network::getApiResponse(JsonDocument& apiResponse, const std::string& url)
 {
     if (!isConnected())
     {
         waitForConnection(15);
     }
-
     HTTPClient http;
-    http.getStream().setNoDelay(true);
-    http.getStream().setTimeout(1);
+    //http.getStream().setNoDelay(true);
+    http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+    http.getStream().setTimeout(10);
+    //http.addHeader("Accept", "application/json");
+    //http.addHeader("Accept-Encoding", "Identity");
     http.begin(url.c_str());
 
     int httpCode = http.GET();
     bool validData = false;
     if (httpCode == 200)
     {
-        int32_t len = http.getSize();
-        if (len > 0)
+        auto response = http.getString();
+        Serial.println("Begin deserialize API response:\n");
+        //ReadLoggingStream loggingStream(http.getStream(), Serial);
+        //DeserializationError error = deserializeJson(apiResponse, loggingStream);
+
+        DeserializationError error = deserializeJson(apiResponse, response);//http.getStream());
+        if (error)
         {
-            DeserializationError error = deserializeJson(apiResponse, http.getStream());
-            if (error)
-            {
-                Serial.print(F("deserializeJson() failed for url: "));
-                Serial.print(url.c_str());
-                Serial.printf((char *)F(" error: %s\n"), error.c_str());
-                validData = false;
-            }
-            else {
-                validData = true;
-            }
+            Serial.printf(
+                (const char *)F("deserializeJson() failed for url: %s error: %s\n"),
+                url.c_str(),
+                error.c_str()
+            );
+            validData = false;
+        }
+        else {
+            Serial.println("Data has been deserialized");
+            Serial.printf("size %d\n", apiResponse.size());
+            validData = true;
         }
     }
 
@@ -116,14 +128,12 @@ void Network::setTimeNTP()
         // Wait for time to be set
         delay(1000);
         nowSecs = time(nullptr);
-        Serial.printf("%d.. ", nowSecs);
+        Serial.printf("%ld.. ", nowSecs);
     } while (nowSecs < 8 * 3600 * 2);
-
     Serial.println();
 
-    struct tm timeinfo;
-    gmtime_r(&nowSecs, &timeinfo);
-
-    Serial.print(F("Current time: "));
-    Serial.print(asctime(&timeinfo));
+    tm timeInfo;
+    nowSecs = time(nullptr);
+    gmtime_r(&nowSecs, &timeInfo);
+    Serial.printf((const char *)F("Current time UTC: %s\n"), asctime(&timeInfo));
 }

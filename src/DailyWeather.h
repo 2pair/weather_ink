@@ -2,11 +2,12 @@
 
 #include <stdint.h>
 #include <string>
+#include <unordered_map>
 
 namespace weather
 {
 
-enum Condition
+enum class Condition
 {
     unknownCondition,
     clear,
@@ -26,7 +27,7 @@ enum Condition
     windy
 };
 
-enum MoonPhase
+enum class MoonPhase
 {
     unknownPhase,
     newMoon,
@@ -39,24 +40,14 @@ enum MoonPhase
     waningCrescent
 };
 
-// Add a namespace to reuse names from other namespaces
-namespace precipitation
-{
-enum Type
-{
-    unknown,
-    none,
-    rain,
-    snow
-};
-}
-
 struct DailyWeather
 {
-    // This should be a unix timestamp in the local timezone.
-    // Since the APIs offer the time in local time, or at least UTC and an offset,
-    // it is easier to just work with local time.
+    // This should be a UTC unix timestamp
     uint64_t timestamp = 0;
+
+    // offset from UTC, in hours. Needed per-day due to daylight savings time.
+    // This is determined from data retrieved from the weather provider's API.
+    int8_t timeZone = 0;
 
     float tempNow = 0.0;
     float feelsLike = 0.0;
@@ -64,8 +55,8 @@ struct DailyWeather
     float tempHigh = 0.0;
 
     Condition condition = Condition::unknownCondition;
-    precipitation::Type precipitationType = precipitation::Type::unknown;
     float precipitation = 0.0;
+    float chanceOfPrecipitation = 0.0;
 
     float humidity = 0.0;
     float pressure = 0.0;
@@ -83,14 +74,17 @@ struct DailyWeather
 
 struct HourlyWeather
 {
-    // This should be a unix timestamp in the local timezone.
+    // This should be a UTC unix timestamp
     uint64_t timestamp = 0;
 
-    float tempNow = 0.0;
+    // offset from UTC, in hours.
+    int8_t timeZone = 0;
+
+    float temp = 0.0;
     float feelsLike = 0.0;
 
     Condition condition = Condition::unknownCondition;
-    float changeOfPrecipitation = 0.0; // out of 1.0
+    float chanceOfPrecipitation = 0.0; // out of 1.0
     float precipitation = 0.0;
 
     float humidity = 0.0;
@@ -102,7 +96,10 @@ struct HourlyWeather
 
 const std::string conditionToString(const Condition condition);
 
-const std::string precipitationToString(const precipitation::Type precipitation);
+bool conditionIsWindy(Condition condition, float windSpeed);
 
-const bool conditionIsWindy(const DailyWeather& dailyWeather);
+const std::string moonPhaseToString(const MoonPhase moonPhase);
+MoonPhase stringToMoonPhase(const std::string moonPhase);
+
+bool isNightTime(const DailyWeather& dailyWeather);
 }

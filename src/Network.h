@@ -11,7 +11,7 @@ namespace network {
 class Network
 {
   public:
-    Network(const std::string& ssid, const std::string& pass, const int8_t timeZone);
+    Network(const std::string& ssid, const std::string& pass);
 
     ~Network();
 
@@ -19,14 +19,12 @@ class Network
 
     bool isConnected();
 
-    bool apiGetResponse(JsonDocument& apiResponse, const std::string& url);
+    bool getApiResponse(JsonDocument& apiResponse, const std::string& url);
 
   private:
     void waitForConnection(const uint8_t waitTimeSec);
 
     void setTimeNTP();
-
-    const int8_t mTimeZone = 0;
 };
 
 }

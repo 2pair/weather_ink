@@ -1,7 +1,6 @@
 #pragma once
 
-// Time zone offset from UTC
-static constexpr int8_t timeZone = 0;
+// Rename this file to default_env.h and populate with your data
 
 // City name to display
 static constexpr char city[] = "";
@@ -19,7 +18,7 @@ static constexpr char pass[] = "";
 static constexpr char apiKeyOpenWeatherMap[] = "";
 
 // https://www.weatherapi.com , register and copy the key provided
-static constexpr char apiKeyWeatherApip[] = "";
+static constexpr char apiKeyWeatherApi[] = "";
 
 // If true, read json files from the SD card instead of querying the API
-static constexpr bool cFakeAPIUpdates = true;
+static constexpr bool cFakeApiUpdates = true;

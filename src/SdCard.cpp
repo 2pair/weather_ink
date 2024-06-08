@@ -134,7 +134,11 @@ bool SdCard::readJsonFile(JsonDocument& jsonDocument, const std::string& filePat
     auto jError = deserializeJson(jsonDocument, mFile);
     if (jError != DeserializationError::Ok)
     {
-        Serial.printf((const char *)F("Failed to load %s from SD card with error %d\n"), filePath, jError);
+        Serial.printf(
+            (const char *)F("Failed to load %s from SD card with error: %s\n"),
+            filePath.c_str(),
+            jError.c_str()
+        );
         return false;
     }
     Serial.println(F("content deserialized to json object"));
@@ -142,14 +146,9 @@ bool SdCard::readJsonFile(JsonDocument& jsonDocument, const std::string& filePat
 }
 
 
-bool SdCard::getFakeCurrentData(JsonDocument& apiResponse)
+bool SdCard::getFakeWeatherData(JsonDocument& apiResponse, const std::string& path)
 {
-    return readJsonFile(apiResponse, (const char *)F("/current.json"));
-}
-
-bool SdCard::getFakeForecastData(JsonDocument& apiResponse)
-{
-    return readJsonFile(apiResponse, (const char *)F("/daily.json"));
+    return readJsonFile(apiResponse, path);
 }
 
 std::vector<std::string> sdcard::getPathComponents(const std::string& path)

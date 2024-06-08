@@ -15,9 +15,6 @@ namespace weatherprovider {
 class WeatherProvider
 {
     public:
-        // Derived classes should redefine this.
-        static constexpr uint32_t monthlyApiCallLimit = 0;
-
         WeatherProvider() = delete;
         WeatherProvider(
             const float latitude,
@@ -29,6 +26,10 @@ class WeatherProvider
                 mCity(city),
                 mApiKey(apiKey)
             {}
+
+        virtual size_t getWeatherUpdateIntervalSeconds() const = 0;
+
+        virtual size_t getForecastUpdateIntervalSeconds() const = 0;
 
         virtual std::string getCurrentWeatherUrl() const = 0;
 
@@ -42,16 +43,23 @@ class WeatherProvider
             weather::daily_forecast& forecastedWeather,
             JsonDocument& forecastApiResponse) const = 0;
 
+        virtual uint8_t toHourlyWeather(
+            weather::hourly_forecast& forecastedWeather,
+            JsonDocument& forecastApiResponse) const = 0;
+
+        virtual std::string getFileSystemDirectory() const = 0;
+
     protected:
         // Normalize condition codes to internal representation
-        virtual void codeToConditions(
-            weather::DailyWeather& dailyWeather,
-            const uint16_t code) const = 0;
+        virtual weather::Condition codeToConditions(const uint16_t code) const = 0;
 
         const float mLatitude;
         const float mLongitude;
         const std::string mCity;
         const std::string mApiKey;
+
+        static const std::string cFsDirectory;
+
 };
 
 }
