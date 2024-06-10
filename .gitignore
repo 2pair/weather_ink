@@ -1,7 +1,7 @@
 # local
 *.code-workspace
 build/**
-**/local_env.h
+**/default_env.h
 .vs
 .vscode
 # Prerequisites

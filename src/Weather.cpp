@@ -87,9 +87,6 @@ bool Weather::updateForecast(network::Network& connection, const weatherprovider
 
 bool Weather::updateWeather(network::Network& connection, const weatherprovider::WeatherProvider& provider)
 {
-
-
-
     JsonDocument apiResponse;
     sdcard::SdCard card(mDisplay);
     bool success = false;

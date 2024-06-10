@@ -1,8 +1,7 @@
 #include "TimeUtils.h"
 
+#include <Arduino.h>
 #include <string>
-
-#include "Network.h"
 
 using namespace timeutils;
 
@@ -17,7 +16,7 @@ static auto saturday = F("Saturday");
 
 time_t timeutils::localTime(const time_t epochTime, const int8_t tzOffset)
 {
-    return epochTime + (tzOffset * 3600);
+    return epochTime + (tzOffset * cSecondsPerHour);
 }
 
 time_t timeutils::localTime(const int8_t tzOffset)
@@ -38,9 +37,10 @@ std::string timeutils::dayNameFromEpochTimestamp(const time_t timestamp)
         (const char*)friday,
         (const char*)saturday
     };
-    static constexpr size_t startingOffset = 4; // Unix time starts on a Thursday
+    static constexpr size_t cStartingOffset = 4; // Unix time starts on a Thursday
+    static constexpr size_t cDaysPerWeek = 7;
     // +1 so that midnight is counted as the following day instead of the preceding day
-    auto day = (((timestamp + 1) / cSecondsPerDay) + startingOffset) % 7;
+    auto day = (((timestamp + 1) / cSecondsPerDay) + cStartingOffset) % cDaysPerWeek;
     return std::string(dayArr[day]);
 }
 
