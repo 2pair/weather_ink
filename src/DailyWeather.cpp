@@ -57,7 +57,7 @@ bool weather::conditionIsWindy(Condition condition, float windSpeed)
             condition == Condition::clear ||
             condition == Condition::partlyCloudy
         ) &&
-        windSpeed >= 20 // mph
+        windSpeed >= cWindyThreshold
     );
 }
 
@@ -110,6 +110,7 @@ weather::MoonPhase weather::stringToMoonPhase(const std::string moonPhase)
 
 bool weather::isNightTime(const DailyWeather& dailyWeather)
 {
+    // only return night status for today's weather
     if (dailyWeather.sunset != 0 and dailyWeather.sunrise != 0)
     {
         return (

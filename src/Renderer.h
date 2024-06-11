@@ -1,11 +1,15 @@
 #pragma once
 
-#include <Inkplate.h>
+#include <string>
 
 #include "WeatherTypes.h"
-#include "DailyWeather.h"
-#include "Weather.h"
 
+
+namespace weather {
+    class DailyWeather;
+    class Weather;
+}
+class Inkplate;
 
 /*  Screen layout:
     +---------------+---------------+

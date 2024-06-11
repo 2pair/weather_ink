@@ -2,10 +2,11 @@
 #error                                                                                                                 \
     "Wrong board configured. Select e-radionica Inkplate6 or Soldered Inkplate6 in the boards menu."
 #endif
-
+//921600
 #include <Arduino.h>
 #include <Inkplate.h>
 #include <ArduinoJson.h>
+#include <esp_attr.h>
 
 #include "src/Environment.h"
 #include "src/Weather.h"
@@ -32,20 +33,17 @@ void draw(const weather::Weather& weatherData);
 void setup()
 {
     Serial.begin(115200);
-    log_d("gDisplay._beginDone is %d\n", gDisplay._beginDone);
     int result = gDisplay.begin();
-    log_d("Return code was %d\n", result);
-    log_d("gDisplay._beginDone is now %d\n", gDisplay._beginDone);
-    if (result)
+    if (!result)
     {
-        Serial.println(F("WARNING: board init failure. Cannot continue. restarting device in 10 seconds..."));
-        delay(10000);
+        log_e("board init failure. Cannot continue. restarting device in 10 seconds...");
+        delay(10 * 1000);
         esp_restart();
     }
     gDisplay.clearDisplay();
     if (!gDisplay.sdCardInit())
     {
-        Serial.println(F("WARNING: SD Card init failure. Icon's will not be available."));
+        log_e("SD Card init failure. Icon's will not be available.");
     }
     sdcard::SdCard::sleep(gDisplay);
 
@@ -53,12 +51,12 @@ void setup()
     gWeather.fakeUpdates(env.fakeApiUpdates);
 
     gDisplay.setRotation(1);
-    Serial.printf((const char*)F("last forecast time: %llu\n"), static_cast<uint64_t>(gWeather.getLastForecastTime()));
+    log_d("last forecast time: %llu"), static_cast<uint64_t>(gWeather.getLastForecastTime());
 }
 
 void loop()
 {
-    constexpr uint32_t cMinSleepTimeSecs = 15 * 1000000L;
+    constexpr uint32_t cMinSleepTimeSecs = 15;
     uint32_t sleepTimeSecs = 0;
     if (std::string(env.provider) == "WeatherApi")
     {
@@ -79,10 +77,12 @@ void loop()
         // weather was not updated. Try again after a little
         sleepTimeSecs = cMinSleepTimeSecs;
     }
-    Serial.printf((const char *)F("Now sleeping for %u seconds (%u minutes)...\n"),
+    log_d("Now sleeping for %u seconds (%u minutes)...",
         sleepTimeSecs,
         (sleepTimeSecs / 60)
     );
+    // pause to finish writing
+    delay(10);
     Serial.end();
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
     esp_sleep_enable_timer_wakeup(sleepTimeSecs * 1000000L);
@@ -96,8 +96,8 @@ bool updateWeather(weather::Weather& weatherData, const weatherprovider::Weather
     // Delay between API calls. 1 minute when reading from SD, minimum 15 minutes otherwise.
     uint32_t sleepTimeSecs =
         env.fakeApiUpdates ? 60 : std::max(provider.getWeatherUpdateIntervalSeconds(), 900U);
-    Serial.printf((const char *)F("Using %s API updates, with a query interval of %u seconds\n"),
-        (env.fakeApiUpdates ? (const char *)F("mock") : (const char *)F("real")),
+    log_d("Using %s API updates, with a query interval of %u seconds",
+        (env.fakeApiUpdates ? (const char *)"mock" : "real"),
         sleepTimeSecs
     );
     // delete
@@ -106,26 +106,34 @@ bool updateWeather(weather::Weather& weatherData, const weatherprovider::Weather
     if (!connection.isConnected())
     {
         // Gotta get online!
-        return 0;
+        return 15;
     }
     static constexpr uint8_t retries = 10;
-    static constexpr uint16_t retryDelaySeconds = 6;
+    static constexpr uint16_t retryDelaySeconds = 5;
     for (uint8_t retry = 0; retry < retries; retry++)
     {
         if (weatherData.updateWeather(connection, provider))
         {
-            Serial.println(F("Forecast updated"));
+            log_i("Forecast updated");
             weatherData.printDailyWeather(weatherData.getDailyWeather(0));
             updated = true;
             break;
         }
         else
         {
-            Serial.println(F("Failed to fetch current weather data"));
+            log_w("Failed to fetch current weather data");
         }
-        delay(retryDelaySeconds * 1000);
+        if (retry != retries - 1)
+        {
+            log_d("Will retry in %lu", retryDelaySeconds);
+            delay(retryDelaySeconds * 1000);
+        }
+        else
+        {
+            log_w("Failed to update weather after %u retries", retries);
+        }
     }
-    return updated ? sleepTimeSecs : 0;
+    return (updated) ? sleepTimeSecs : 0;
 }
 
 void draw(const weather::Weather& weatherData)

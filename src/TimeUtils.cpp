@@ -1,5 +1,6 @@
 #include "TimeUtils.h"
 
+#include <esp32-hal-log.h>
 #include <Arduino.h>
 #include <string>
 
@@ -22,7 +23,7 @@ time_t timeutils::localTime(const time_t epochTime, const int8_t tzOffset)
 time_t timeutils::localTime(const int8_t tzOffset)
 {
     auto timeNow = localTime(time(nullptr), tzOffset);
-    Serial.printf("Current epoch time in timezone is %llu\n", timeNow);
+    log_v("Current epoch time in timezone is %llu\n", timeNow);
     return timeNow;
 }
 

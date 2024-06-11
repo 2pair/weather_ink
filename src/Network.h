@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 
-#include <Inkplate.h>
 #include <ArduinoJson.h>
 
 

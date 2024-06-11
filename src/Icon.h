@@ -1,9 +1,9 @@
 # pragma once
 
-#include <Inkplate.h>
-
 #include "DailyWeather.h"
 
+
+class Inkplate;
 
 namespace icon {
 

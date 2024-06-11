@@ -19,7 +19,7 @@ SdCard::SdCard(Inkplate& display)
     mInitialized = static_cast<bool>(display.sdCardInit());
     if (!mInitialized)
     {
-        Serial.println(F("WARNING: SD Card Initialization Failure"));
+        log_e("SD Card Initialization Failure");
     }
 }
 
@@ -50,12 +50,12 @@ std::string SdCard::findFileWithPrefix(const std::string& dirPath, const std::st
 
     if (!mFileSystem.exists(path.c_str()))
     {
-        Serial.printf((const char*)F("\nCould not find file. File's path (%s) does not exist\n"), path.c_str());
+        log_w("Could not find file. File's path (%s) does not exist", path.c_str());
         return foundName;
     }
     if (!mFileSystem.chdir(path.c_str()))
     {
-        Serial.printf((const char*)F("Failed to open directory %s\n"), path.c_str());
+        log_w("Failed to open directory %s", path.c_str());
         return foundName;
     }
 
@@ -63,7 +63,7 @@ std::string SdCard::findFileWithPrefix(const std::string& dirPath, const std::st
     success = dir.open(path.c_str(), O_RDONLY);
     if (!success)
     {
-        Serial.printf((const char*)F("Failed to attach fh directory %s\n"), path.c_str());
+        log_w("Failed to attach fh directory %s", path.c_str());
         return foundName;
     }
     auto pixelSize = getPathComponents(dirPath).back();
@@ -97,28 +97,28 @@ bool SdCard::openFile(const std::string& filePath)
 {
     if (!mInitialized)
     {
-        Serial.println(F("Cannot read file because the SD Card could not be initialized"));
+        log_w("Cannot read file because the SD Card could not be initialized");
         return false;
     }
     if (mFileOpen)
     {
-        Serial.printf((const char *)F("Closing open file before opening %s\n"), filePath.c_str());
+        log_i("Closing open file before opening %s", filePath.c_str());
         if (!mFile.close())
         {
-            Serial.println(F("Failed to close file!"));
+            log_w("Failed to close file!");
         }
     }
 
-    Serial.printf((const char *)F("Opening file %s\n"), filePath.c_str());
+    log_i("Opening file %s", filePath.c_str());
     if (!mFileSystem.exists(filePath.c_str()))
     {
-        Serial.println(F("File does not exist"));
+        log_w("File does not exist");
         return false;
     }
 
     if (!mFile.open(filePath.c_str(), O_RDONLY))
     {
-        Serial.println(F("File open error"));
+        log_w("File open error");
         return false;
     }
     mFileOpen = true;
@@ -134,14 +134,14 @@ bool SdCard::readJsonFile(JsonDocument& jsonDocument, const std::string& filePat
     auto jError = deserializeJson(jsonDocument, mFile);
     if (jError != DeserializationError::Ok)
     {
-        Serial.printf(
-            (const char *)F("Failed to load %s from SD card with error: %s\n"),
+        log_w(
+            "Failed to load %s from SD card with error: %s",
             filePath.c_str(),
             jError.c_str()
         );
         return false;
     }
-    Serial.println(F("content deserialized to json object"));
+    log_i("content deserialized to json object");
     return true;
 }
 

@@ -2,8 +2,12 @@
 
 #include <WString.h>
 
+#include <Inkplate.h>
+#include <esp32-hal-log.h>
+
 #include "SdCard.h"
 #include "DailyWeather.h"
+#include "TimeUtils.h"
 
 
 using namespace icon;
@@ -32,7 +36,7 @@ Icon::Icon(Inkplate& display, const std::string&  iconName)
     }
     else
     {
-        Serial.println(F("WARNING: Found file did not have an extension, assuming PNG"));
+        log_w("Found file did not have an extension, assuming PNG");
         mExtension = "png";
     }
 }
@@ -67,9 +71,14 @@ const std::string Icon::getIconNameForConditions(const weather::DailyWeather& co
     using namespace weather;
 
     // Get Moon icons only if this is todays weather and its nighttime.
-    // The timestamp for the current weather will be in the past.
-    bool getMoonPhase = conditions.timestamp < time(nullptr) && isNightTime(conditions);
-
+    bool getMoonPhase = (
+        (
+            timeutils::dayNameFromEpochTimestamp(conditions.timestamp) ==
+            timeutils::dayNameFromEpochTimestamp(time(nullptr))
+        ) &&
+        isNightTime(conditions)
+    );
+    log_v("Getting nighttime icon for conditions with timestamp %llu", conditions.timestamp);
     switch (conditions.condition)
     {
         case Condition::clear:
@@ -180,8 +189,8 @@ icon::Icon icon::iconFactory(Inkplate& display, const weather::DailyWeather& con
     icon::Icon weatherIcon(display, icon::Icon::getIconNameForConditions(conditions));
     if (!weatherIcon.exists())
     {
-        Serial.printf(
-            (const char*)F("Icon %s does not exist\n"),
+        log_w(
+            "Icon %s does not exist\n",
             conditionToString(conditions.condition).c_str()
         );
     }

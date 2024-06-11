@@ -2,7 +2,6 @@
 
 #include <ArduinoJson.h>
 
-// foreword declaration
 class Inkplate;
 
 

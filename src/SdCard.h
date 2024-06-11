@@ -1,8 +1,12 @@
 #pragma once
 
-#include <Inkplate.h>
-#include <ArduinoJson.h>
+#include <vector>
 
+#include <ArduinoJson.h>
+#include <SdFat.h>
+
+
+class Inkplate;
 
 namespace sdcard {
 

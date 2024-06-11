@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include <ArduinoJson.h>
+#include <esp32-hal-log.h>
 
 #include "../DailyWeather.h"
 #include "../TimeUtils.h"
@@ -40,6 +41,7 @@ std::string WeatherApi::getCurrentWeatherUrl() const
 {
     return getForecastedWeatherUrl();
     //current weather is a subset of the forecasted weather, and the forecast also has hourly data
+
     // const char* format = (const char *)F("current.json?q=%.4f,%.4f&key=%s");
     // int resultSize = std::snprintf( nullptr, 0, format, mLatitude, mLongitude, mApiKey.c_str()) + 1;
     // auto size = static_cast<size_t>(resultSize);
@@ -70,7 +72,8 @@ std::string WeatherApi::getForecastedWeatherUrl() const
 
     std::snprintf(endpoint.data(), size, format, mLatitude, mLongitude, days, mApiKey.c_str());
     std::string endpoint_data = endpoint.data();
-    return std::string(cBaseUrl).append(endpoint_data).append(fieldFilter);
+    // the field filter was not doing anything
+    return std::string(cBaseUrl).append(endpoint_data); //.append(fieldFilter);
 }
 
 void WeatherApi::toCurrentWeather(
@@ -100,7 +103,7 @@ void WeatherApi::toCurrentWeather(
 
     currentWeather.precipitation =  currentApiResponse["current"]["precip_in"];
 
-    Serial.println(F("JSON successfully converted to current weather"));
+    log_i("JSON successfully converted to current weather");
 }
 
 uint8_t WeatherApi::toForecastedWeather(
@@ -167,10 +170,10 @@ uint8_t WeatherApi::toForecastedWeather(
         //dailyWeather.gustSpeed = ; // not available
         //dailyWeather.windDirection = ; // not available
     }
-    Serial.println(F("JSON successfully converted to forecasted weather"));
+    log_i("JSON successfully converted to forecasted weather");
     if (reorder)
     {
-        Serial.print(F("WARNING: Weather data was not in chronological order from API\n"));
+        log_w("Weather data was not in chronological order from API");
     }
     return minDays;
 }
@@ -214,7 +217,7 @@ uint8_t WeatherApi::toHourlyWeather(
         auto& day = mapIter.first;
         auto& startHour = mapIter.second.first;
         auto& hoursToGet = mapIter.second.second;
-        Serial.printf("getting %u hours of weather with offset of %u for day %u\n",
+        log_d("getting %u hours of weather with offset of %u for day %u\n",
             hoursToGet, startHour, day
         );
 
@@ -229,7 +232,7 @@ uint8_t WeatherApi::toHourlyWeather(
             HourlyWeather& hourlyWeather = forecastedWeather[hourIndex];
             auto const hourlyData =
                 forecastApiResponse["forecast"]["forecastday"][day]["hour"][responseIter];
-            Serial.printf("getting hourly data for %s\n", hourlyData["time"].as<std::string>().c_str());
+            log_d("getting hourly data for %s\n", hourlyData["time"].as<std::string>().c_str());
             hourlyWeather.timestamp = hourlyData["time_epoch"];
             if (hourlyWeather.timestamp <= lastDt)
             {
@@ -260,10 +263,10 @@ uint8_t WeatherApi::toHourlyWeather(
             hourlyWeather.windSpeed = hourlyData["wind_mph"];
             hourlyWeather.windDirection = hourlyData["wind_degree"];
         }
-        Serial.println(F("JSON successfully converted to hourly forecast weather"));
+        log_i("JSON successfully converted to hourly forecast weather");
         if (reorder)
         {
-            Serial.print(F("WARNING: Weather data was not in chronological order from API\n"));
+            log_w("Weather data was not in chronological order from API");
         }
     }
     return minHours;

@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include <ArduinoJson.h>
+#include <esp32-hal-log.h>
 
 #include "../DailyWeather.h"
 #include "../TimeUtils.h"
@@ -78,7 +79,7 @@ void OpenWeatherMap::toCurrentWeather(
     if (conditionIsWindy(currentWeather.condition, currentWeather.windSpeed)) {
         currentWeather.condition = Condition::windy;
     }
-    Serial.println(F("JSON successfully converted to current weather"));
+    log_i("JSON successfully converted to current weather");
 }
 
 uint8_t OpenWeatherMap::toForecastedWeather(
@@ -136,10 +137,10 @@ uint8_t OpenWeatherMap::toForecastedWeather(
         dailyWeather.gustSpeed = dailyData["gust"];
         dailyWeather.windDirection = dailyData["deg"];
     }
-    Serial.println(F("JSON successfully converted to forecasted weather"));
+    log_i("JSON successfully converted to forecasted weather");
     if (reorder)
     {
-        Serial.print(F("WARNING: Weather data was not in chronological order from API\n"));
+        log_w("Weather data was not in chronological order from API");
     }
     return minDays;
 }

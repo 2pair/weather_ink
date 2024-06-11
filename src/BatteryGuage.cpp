@@ -1,5 +1,8 @@
 #include "BatteryGuage.h"
 
+#include <Inkplate.h>
+#include <esp32-hal-log.h>
+
 #include "Icon.h"
 
 using namespace icon;
@@ -23,7 +26,7 @@ void BatteryGauge::drawCentered(size_t x, size_t y, Size size)
 BatteryGauge::Power icon::BatteryGauge::getCharge()
 {
     auto batteryVoltage = mDisplay.readBattery();
-    Serial.printf((const char*)F("Battery voltage is %.3f V\n"), batteryVoltage);
+    log_i("Battery voltage is %.3f V\n", batteryVoltage);
     if (batteryVoltage >= cVoltageBattFull)
     {
         return BatteryGauge::Power::full;

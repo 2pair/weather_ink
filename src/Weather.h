@@ -3,17 +3,20 @@
 #include <stdint.h>
 #include <memory>
 
-#include <Inkplate.h>
 #include <ArduinoJson.h>
 
 #include "WeatherTypes.h"
-#include "WeatherProvider/WeatherProvider.h"
-#include "DailyWeather.h"
-#include "Network.h"
 
 
+class Inkplate;
 namespace weatherprovider {
-    class OpenWeatherMap;
+    class WeatherProvider;
+}
+namespace weather {
+    class DailyWeather;
+}
+namespace network {
+    class Network;
 }
 
 namespace weather

@@ -1,5 +1,7 @@
 #include "Environment.h"
 
+#include <Inkplate.h>
+#include <esp32-hal-log.h>
 #include <ArduinoJson.h>
 
 #include "../default_env.h"
@@ -19,9 +21,9 @@ Environment setEnvironmentFromFile(const std::string& filename, Inkplate& displa
         env.latitude = envFile["latitude"] | cLatitude;
         env.longitude = envFile["longitude"] | cLongitude;
 
-        std::string ssid = envFile["ssid"] | cSsid;
+        std::string ssid = cSsid;//envFile["ssid"] | cSsid;
         strlcpy(env.ssid, ssid.c_str(), cSsidLength);
-        std::string pass = envFile["pass"] | cPass;
+        std::string pass = cPass;//envFile["pass"] | cPass;
         strlcpy(env.pass, pass.c_str(), cPassLength);
 
         std::string provider = envFile["primaryProvider"] | cProvider;
@@ -37,7 +39,7 @@ Environment setEnvironmentFromFile(const std::string& filename, Inkplate& displa
             strlcpy(env.apiKey, apiKey.c_str(), cApiKeyLength);
         }
         else {
-            Serial.printf("WARNING: Unknown provider: %s\n", env.provider);
+            log_w("Unknown provider: %s\n", env.provider);
         }
 
         env.fakeApiUpdates = envFile["fakeApiUpdates"] | cFakeApiUpdates;
@@ -59,7 +61,7 @@ Environment setEnvironmentFromFile(const std::string& filename, Inkplate& displa
             strlcpy(env.apiKey, cApiKeyWeatherApi, cApiKeyLength);
         }
         else {
-            Serial.printf("No API key provided!");
+            log_e("No API key provided!");
         }
         env.fakeApiUpdates = cFakeApiUpdates;
     }

@@ -58,6 +58,7 @@ class WeatherProvider
         const std::string mCity;
         const std::string mApiKey;
 
+        // Directory on filesystem where this providers API samples are stored
         static const std::string cFsDirectory;
 
 };

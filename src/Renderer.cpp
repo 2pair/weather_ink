@@ -4,6 +4,7 @@
 #include <string>
 #include <WString.h>
 
+#include <esp32-hal-log.h>
 #include <Inkplate.h>
 #include <ArduinoJson.h>
 
@@ -29,7 +30,7 @@ Renderer::Renderer(Inkplate& display, const char* city)
 
 void Renderer::update(const weather::Weather& weatherData)
 {
-    Serial.println(F("Updating screen buffer"));
+    log_i("Updating screen buffer");
     mDisplay.clearDisplay();
     mDisplay.setTextWrap(false);
 
@@ -44,7 +45,7 @@ void Renderer::update(const weather::Weather& weatherData)
     static constexpr size_t maxDaysToForecast = 3;
     auto daysForecasted = weatherData.getDailyForecastLength() - 1;
     auto daysToForecast = std::min(maxDaysToForecast, daysForecasted);
-    Serial.printf("drawing %u forecasted days\n", daysToForecast);
+    log_i("drawing %u forecasted days", daysToForecast);
     for (size_t i = 1; i < 1 + daysToForecast; i++)
     {
         auto& forecast = weatherData.getDailyWeather(i);
@@ -65,7 +66,7 @@ void Renderer::update(const weather::Weather& weatherData)
 }
 
 void Renderer::render() {
-    Serial.println(F("Drawing screen buffer to display"));
+    log_i("Drawing screen buffer to display");
     mDisplay.display();
 }
 
@@ -75,7 +76,7 @@ void Renderer::drawCurrentConditions(
     const size_t y
 )
 {
-    Serial.println(F("Drawing current conditions"));
+    log_i("Drawing current conditions");
     auto weatherIcon = icon::iconFactory(mDisplay, currentConditions);
     static constexpr size_t iconTopMargin = 95;
     static constexpr size_t iconHeight = 300;
@@ -136,7 +137,7 @@ void Renderer::drawHourlyForecast(
     const size_t y
 )
 {
-    Serial.println("drawing hourly");
+    log_i("drawing hourly");
     // draw horizon line of n pixels long
     static constexpr size_t lineWeight = 6;
     static constexpr size_t hourlyMarginX = 45;
@@ -161,14 +162,14 @@ void Renderer::drawHourlyForecast(
         if (forecast[i].timestamp > timeutils::localTime(forecast[i].timeZone))
         {
             offset = i;
-            Serial.printf("Hourly data has an offset of %u\n", i);
+            log_d("Hourly data has an offset of %u", i);
             break;
         }
     }
     auto hoursToForecast = std::min(forecast.size() - offset, maxHoursToForecast);
     if (hoursToForecast < maxHoursToForecast)
     {
-        Serial.println("WARNING: There is not enough data to fully populate the hourly forecast.");
+        log_w("There is not enough data to fully populate the hourly forecast.");
     }
     auto textMarginH = 10;
 
@@ -214,9 +215,8 @@ void Renderer::drawHourlyForecast(
         mDisplay.println(temp.c_str());
 
         mDisplay.setFont(&PatrickHand_Regular16pt7b);
-        std::string time = timeutils::hour12FromEpochTimestamp(
-            timeutils::localTime(hourlyForecast.timestamp, hourlyForecast.timeZone)
-        );
+        // This time is already in the local timezone.
+        std::string time = timeutils::hour12FromEpochTimestamp(hourlyForecast.timestamp);
         uint16_t timeW, timeH;
         std::tie(timeW, timeH) = getTextDimensions(time);
         uint16_t timeX = tickBottomCenterX - (timeW / 2);
@@ -232,7 +232,7 @@ void Renderer::drawForecastForDay(
     const size_t y
 )
 {
-    Serial.println(F("Drawing forecast"));
+    log_i("Drawing forecast");
     // Totally clear area to create visual separation
     static constexpr size_t iconTopMarginY = 5;
     static constexpr size_t textTopMarginY = 25;

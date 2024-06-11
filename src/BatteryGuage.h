@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Inkplate.h>
-
 #include "Icon.h"
+
+class Inkplate;
 
 namespace icon {
 

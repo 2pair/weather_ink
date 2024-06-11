@@ -1,10 +1,10 @@
 // Disabling HTTP 1.1 to avoid getting chunked data
-#undef HTTPCLIENT_1_1_COMPATIBLE
-#define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
+//#undef HTTPCLIENT_1_1_COMPATIBLE
+//#define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
 
 #include "Network.h"
 
-#include <Inkplate.h>
+#include <esp32-hal-log.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -48,14 +48,13 @@ bool Network::isConnected()
 
 void Network::waitForConnection(const uint8_t waitTimeSec)
 {
-    Serial.print(F("Waiting for WIFI connection"));
+    log_i("Waiting for WIFI connection");
     for (uint8_t seconds = 0; seconds < waitTimeSec; seconds++) {
         if (isConnected())
         {
-            Serial.println(F(" success"));
+            log_i(" success");
             return;
         }
-        Serial.print(F("."));
         if (seconds % 10 == 0)
         {
             /* Status codes copied from wl_status_t in WifiType.h
@@ -67,11 +66,11 @@ void Network::waitForConnection(const uint8_t waitTimeSec)
                 WL_CONNECTION_LOST  = 5,
                 WL_DISCONNECTED     = 6
             */
-            Serial.printf((const char*)F(" status: %d "), WiFi.status());
+            log_d(" status: %d ", WiFi.status());
         }
         delay(1000);
     }
-    Serial.println(F(" failure"));
+    log_w(" failure");
 }
 
 bool Network::getApiResponse(JsonDocument& apiResponse, const std::string& url)
@@ -93,23 +92,23 @@ bool Network::getApiResponse(JsonDocument& apiResponse, const std::string& url)
     if (httpCode == 200)
     {
         auto response = http.getString();
-        Serial.println("Begin deserialize API response:\n");
+        log_d("Begin deserialize API response:");
         //ReadLoggingStream loggingStream(http.getStream(), Serial);
         //DeserializationError error = deserializeJson(apiResponse, loggingStream);
 
         DeserializationError error = deserializeJson(apiResponse, response);//http.getStream());
         if (error)
         {
-            Serial.printf(
-                (const char *)F("deserializeJson() failed for url: %s error: %s\n"),
+            log_w(
+                "deserializeJson() failed for url: %s error: %s",
                 url.c_str(),
                 error.c_str()
             );
             validData = false;
         }
         else {
-            Serial.println("Data has been deserialized");
-            Serial.printf("size %d\n", apiResponse.size());
+            log_i("Data has been deserialized");
+            log_d("size %d\n", apiResponse.size());
             validData = true;
         }
     }
@@ -122,18 +121,17 @@ void Network::setTimeNTP()
 {
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
-    Serial.print(F("Waiting for NTP time sync: "));
+    log_i("Waiting for NTP time sync: ");
     time_t nowSecs;
     do {
         // Wait for time to be set
         delay(1000);
         nowSecs = time(nullptr);
-        Serial.printf("%ld.. ", nowSecs);
+        log_v("%ld.. ", nowSecs);
     } while (nowSecs < 8 * 3600 * 2);
-    Serial.println();
 
     tm timeInfo;
     nowSecs = time(nullptr);
     gmtime_r(&nowSecs, &timeInfo);
-    Serial.printf((const char *)F("Current time UTC: %s\n"), asctime(&timeInfo));
+    log_i("Current time UTC: %s\n", asctime(&timeInfo));
 }

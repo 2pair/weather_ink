@@ -96,6 +96,7 @@ struct HourlyWeather
 
 const std::string conditionToString(const Condition condition);
 
+constexpr size_t cWindyThreshold = 15; // mph
 bool conditionIsWindy(Condition condition, float windSpeed);
 
 const std::string moonPhaseToString(const MoonPhase moonPhase);
