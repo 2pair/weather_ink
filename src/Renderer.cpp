@@ -216,7 +216,9 @@ void Renderer::drawHourlyForecast(
 
         mDisplay.setFont(&PatrickHand_Regular16pt7b);
         // This time is already in the local timezone.
-        std::string time = timeutils::hour12FromEpochTimestamp(hourlyForecast.timestamp);
+        std::string time = timeutils::hour12FromEpochTimestamp(
+            timeutils::localTime(hourlyForecast.timestamp, hourlyForecast.timeZone)
+        );
         uint16_t timeW, timeH;
         std::tie(timeW, timeH) = getTextDimensions(time);
         uint16_t timeX = tickBottomCenterX - (timeW / 2);

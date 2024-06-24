@@ -1,15 +1,13 @@
-// Disabling HTTP 1.1 to avoid getting chunked data
-//#undef HTTPCLIENT_1_1_COMPATIBLE
-//#define ARDUINOJSON_ENABLE_ARDUINO_STREAM 1
-
 #include "Network.h"
 
 #include <esp32-hal-log.h>
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <time.h>
 
 #include "TimeUtils.h"
+#include <esp_sntp.h>
 
 
 using namespace network;
@@ -83,8 +81,6 @@ bool Network::getApiResponse(JsonDocument& apiResponse, const std::string& url)
     //http.getStream().setNoDelay(true);
     http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
     http.getStream().setTimeout(10);
-    //http.addHeader("Accept", "application/json");
-    //http.addHeader("Accept-Encoding", "Identity");
     http.begin(url.c_str());
 
     int httpCode = http.GET();
@@ -95,7 +91,7 @@ bool Network::getApiResponse(JsonDocument& apiResponse, const std::string& url)
         log_d("Begin deserialize API response:");
         //ReadLoggingStream loggingStream(http.getStream(), Serial);
         //DeserializationError error = deserializeJson(apiResponse, loggingStream);
-
+        //log_v("\n\n%s\n\n", response.c_str());
         DeserializationError error = deserializeJson(apiResponse, response);//http.getStream());
         if (error)
         {
@@ -108,7 +104,7 @@ bool Network::getApiResponse(JsonDocument& apiResponse, const std::string& url)
         }
         else {
             log_i("Data has been deserialized");
-            log_d("size %d\n", apiResponse.size());
+            log_d("size %d", apiResponse.size());
             validData = true;
         }
     }
@@ -133,5 +129,10 @@ void Network::setTimeNTP()
     tm timeInfo;
     nowSecs = time(nullptr);
     gmtime_r(&nowSecs, &timeInfo);
-    log_i("Current time UTC: %s\n", asctime(&timeInfo));
+    log_i("Current time UTC: %s", asctime(&timeInfo));
+    if (esp_sntp_enabled())
+    {
+        log_d("Disabling NTP");
+        esp_sntp_stop();
+    }
 }

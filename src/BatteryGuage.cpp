@@ -26,7 +26,7 @@ void BatteryGauge::drawCentered(size_t x, size_t y, Size size)
 BatteryGauge::Power icon::BatteryGauge::getCharge()
 {
     auto batteryVoltage = mDisplay.readBattery();
-    log_i("Battery voltage is %.3f V\n", batteryVoltage);
+    log_i("Battery voltage is %.3f V", batteryVoltage);
     if (batteryVoltage >= cVoltageBattFull)
     {
         return BatteryGauge::Power::full;

@@ -71,14 +71,21 @@ const std::string Icon::getIconNameForConditions(const weather::DailyWeather& co
     using namespace weather;
 
     // Get Moon icons only if this is todays weather and its nighttime.
+    auto nowTime = time(nullptr);
+    log_d("now time is %llu", nowTime);
     bool getMoonPhase = (
         (
-            timeutils::dayNameFromEpochTimestamp(conditions.timestamp) ==
-            timeutils::dayNameFromEpochTimestamp(time(nullptr))
+            timeutils::dayNameFromEpochTimestamp(timeutils::localTime(conditions.timestamp, conditions.timeZone)) ==
+            timeutils::dayNameFromEpochTimestamp(timeutils::localTime(nowTime, conditions.timeZone))
         ) &&
         isNightTime(conditions)
     );
-    log_v("Getting nighttime icon for conditions with timestamp %llu", conditions.timestamp);
+    log_v("Getting nighttime icon for conditions with timestamp %llu mapped to day %s, at timestamp %llu mapped to day %s",
+        conditions.timestamp, 
+        timeutils::dayNameFromEpochTimestamp(timeutils::localTime(conditions.timestamp, conditions.timeZone)).c_str(),
+        nowTime,
+        timeutils::dayNameFromEpochTimestamp(timeutils::localTime(nowTime, conditions.timeZone)).c_str()
+    );
     switch (conditions.condition)
     {
         case Condition::clear:
@@ -189,10 +196,7 @@ icon::Icon icon::iconFactory(Inkplate& display, const weather::DailyWeather& con
     icon::Icon weatherIcon(display, icon::Icon::getIconNameForConditions(conditions));
     if (!weatherIcon.exists())
     {
-        log_w(
-            "Icon %s does not exist\n",
-            conditionToString(conditions.condition).c_str()
-        );
+        log_w("Icon %s does not exist",conditionToString(conditions.condition).c_str());
     }
     return weatherIcon;
 }

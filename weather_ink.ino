@@ -27,7 +27,7 @@ RTC_DATA_ATTR weather::Weather gWeather(gDisplay);
 /* Returns how long to wait until the next update, in seconds.
    It the weather could not be updated returns 0.   
 */
-bool updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider);
+uint32_t updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider);
 void draw(const weather::Weather& weatherData);
 
 void setup()
@@ -90,7 +90,7 @@ void loop()
     esp_deep_sleep_start();
 }
 
-bool updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider)
+uint32_t updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider)
 {
     network::Network connection(env.ssid, env.pass);
     // Delay between API calls. 1 minute when reading from SD, minimum 15 minutes otherwise.
@@ -100,8 +100,6 @@ bool updateWeather(weather::Weather& weatherData, const weatherprovider::Weather
         (env.fakeApiUpdates ? (const char *)"mock" : "real"),
         sleepTimeSecs
     );
-    // delete
-    sleepTimeSecs = 60;
     bool updated = false;
     if (!connection.isConnected())
     {
@@ -125,7 +123,7 @@ bool updateWeather(weather::Weather& weatherData, const weatherprovider::Weather
         }
         if (retry != retries - 1)
         {
-            log_d("Will retry in %lu", retryDelaySeconds);
+            log_i("Will retry in %lu seconds", retryDelaySeconds);
             delay(retryDelaySeconds * 1000);
         }
         else

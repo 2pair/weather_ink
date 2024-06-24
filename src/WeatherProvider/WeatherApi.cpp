@@ -137,16 +137,32 @@ uint8_t WeatherApi::toForecastedWeather(
             dailyDayData["daily_chance_of_rain"].as<float>(),
             dailyDayData["daily_chance_of_snow"].as<float>()
         ) / 100.0;
-        dailyWeather.moonPhase = stringToMoonPhase(dailyData["astro"]["moon_phase"].as<const char*>());
-        std::string dateTime = dailyData["date"];
-        tm time;
-        auto sunrise = dateTime + ' ' + dailyData["astro"]["sunrise"].as<const char*>();
-        strptime(dateTime.c_str(), "%F %I:%M %p", &time);
-        dailyWeather.sunrise = mktime(&time);
+        dailyWeather.moonPhase = stringToMoonPhase(dailyData["astro"]["moon_phase"].as<std::string>());
+        const std::string dateTime = dailyData["date"];
 
-        auto sunset = dateTime + ' ' + dailyData["astro"]["sunset"].as<const char*>();
-        strptime(dateTime.c_str(), "%F %I:%M %p", &time);
-        dailyWeather.sunset = mktime(&time);
+        std::string sunrise = dailyData["astro"]["sunrise"];
+        if (sunrise.front() == '0')
+        {
+            sunrise.erase(sunrise.begin());
+            log_v("Sunrise started with 0, now equals", sunrise.c_str());
+        }
+        sunrise = dateTime + " " + sunrise;
+        log_v("Sunrise: %s", sunrise.c_str());
+        tm sunriseTime;
+        strptime(sunrise.c_str(), "%F %I:%M %p", &sunriseTime);
+        dailyWeather.sunrise = mktime(&sunriseTime);
+
+        std::string sunset = dailyData["astro"]["sunset"];
+        if (sunset.front() == '0')
+        {
+            sunset.erase(sunset.begin());
+            log_v("Sunset started with 0, now equals", sunset.c_str());
+        }
+        sunset = dateTime + " " + sunset;
+        log_v("Sunset: %s", sunset.c_str());
+        tm sunsetTime;
+        strptime(sunset.c_str(), "%F %I:%M %p", &sunsetTime);
+        dailyWeather.sunset = mktime(&sunsetTime);
         if (index == 0)
         {
             // Don't need any other data from this API for the current day
@@ -217,7 +233,7 @@ uint8_t WeatherApi::toHourlyWeather(
         auto& day = mapIter.first;
         auto& startHour = mapIter.second.first;
         auto& hoursToGet = mapIter.second.second;
-        log_d("getting %u hours of weather with offset of %u for day %u\n",
+        log_d("getting %u hours of weather with offset of %u for day %u",
             hoursToGet, startHour, day
         );
 
@@ -232,7 +248,7 @@ uint8_t WeatherApi::toHourlyWeather(
             HourlyWeather& hourlyWeather = forecastedWeather[hourIndex];
             auto const hourlyData =
                 forecastApiResponse["forecast"]["forecastday"][day]["hour"][responseIter];
-            log_d("getting hourly data for %s\n", hourlyData["time"].as<std::string>().c_str());
+            log_d("getting hourly data for %s", hourlyData["time"].as<std::string>().c_str());
             hourlyWeather.timestamp = hourlyData["time_epoch"];
             if (hourlyWeather.timestamp <= lastDt)
             {

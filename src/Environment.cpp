@@ -39,7 +39,7 @@ Environment setEnvironmentFromFile(const std::string& filename, Inkplate& displa
             strlcpy(env.apiKey, apiKey.c_str(), cApiKeyLength);
         }
         else {
-            log_w("Unknown provider: %s\n", env.provider);
+            log_w("Unknown provider: %s", env.provider);
         }
 
         env.fakeApiUpdates = envFile["fakeApiUpdates"] | cFakeApiUpdates;

@@ -3,6 +3,7 @@
 #include <esp32-hal-log.h>
 #include <Arduino.h>
 #include <string>
+#include <time.h>
 
 using namespace timeutils;
 
@@ -17,13 +18,18 @@ static auto saturday = F("Saturday");
 
 time_t timeutils::localTime(const time_t epochTime, const int8_t tzOffset)
 {
-    return epochTime + (tzOffset * cSecondsPerHour);
+    return epochTime + (static_cast<uint32_t>(tzOffset) * cSecondsPerHour);
 }
 
 time_t timeutils::localTime(const int8_t tzOffset)
 {
-    auto timeNow = localTime(time(nullptr), tzOffset);
-    log_v("Current epoch time in timezone is %llu\n", timeNow);
+    auto timeUtc = time(nullptr);
+    if (timeUtc == (time_t)-1)
+    {
+        log_w("Time function was not able to determine the calendar time");
+    }
+    auto timeNow = localTime(timeUtc, tzOffset);
+    log_v("Current epoch time is %llu, with tz_offset of %d in timezone is %llu", timeUtc, tzOffset, timeNow);
     return timeNow;
 }
 
