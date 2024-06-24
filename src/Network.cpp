@@ -115,6 +115,7 @@ bool Network::getApiResponse(JsonDocument& apiResponse, const std::string& url)
 
 void Network::setTimeNTP()
 {
+    sntp_set_sync_mode(SNTP_SYNC_MODE_IMMED);
     configTime(0, 0, "pool.ntp.org", "time.nist.gov");
 
     log_i("Waiting for NTP time sync: ");
@@ -124,7 +125,7 @@ void Network::setTimeNTP()
         delay(1000);
         nowSecs = time(nullptr);
         log_v("%ld.. ", nowSecs);
-    } while (nowSecs < 8 * 3600 * 2);
+    } while (sntp_get_sync_status() != SNTP_SYNC_STATUS_COMPLETED);
 
     tm timeInfo;
     nowSecs = time(nullptr);
