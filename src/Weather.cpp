@@ -28,7 +28,7 @@ bool Weather::updateCurrent(network::Network& connection, const weatherprovider:
         log_i("Reading file data to simulate current conditions API response");
         success = card.getFakeWeatherData(
             apiResponse,
-            provider.getFileSystemDirectory() + (const char *)"forecast.json"
+            provider.getFileSystemDirectory() + (const char *)"current.json"
         );
     }
     else
@@ -41,11 +41,42 @@ bool Weather::updateCurrent(network::Network& connection, const weatherprovider:
     if (success) {
         log_d("Converting JSON to current weather data");
         provider.toCurrentWeather(mForecast[0], apiResponse);
-        provider.toHourlyWeather(mHourlyForecast, apiResponse); //TODO is this portable?
     }
     else
     {
-        log_w("Failed to get API response");
+        log_w("Failed to get API response for current weather");
+    }
+    apiResponse.clear();
+    return success;
+}
+
+bool Weather::updateHourly(network::Network& connection, const weatherprovider::WeatherProvider& provider)
+{
+    JsonDocument apiResponse;
+    sdcard::SdCard card(mDisplay);
+    bool success = false;
+    if (mFakeUpdates)
+    {
+        log_i("Reading file data to simulate hourly conditions API response");
+        success = card.getFakeWeatherData(
+            apiResponse,
+            provider.getFileSystemDirectory() + (const char *)"forecast.json"
+        );
+    }
+    else
+    {
+        auto url = provider.getHourlyWeatherUrl();
+        log_d("URL returned: %s", url.c_str());
+        success = connection.getApiResponse(apiResponse, url);
+    }
+
+    if (success) {
+        log_d("Converting JSON to hourly weather data");
+        provider.toHourlyWeather(mHourlyForecast, apiResponse);
+    }
+    else
+    {
+        log_w("Failed to get API response for hourly weather");
     }
     apiResponse.clear();
     return success;
@@ -80,7 +111,7 @@ bool Weather::updateForecast(network::Network& connection, const weatherprovider
     }
     else
     {
-        log_w("Failed to get API response");
+        log_w("Failed to get API response for forecasted weather");
     }
     apiResponse.clear();
     return success;
@@ -88,40 +119,11 @@ bool Weather::updateForecast(network::Network& connection, const weatherprovider
 
 bool Weather::updateWeather(network::Network& connection, const weatherprovider::WeatherProvider& provider)
 {
-    JsonDocument apiResponse;
-    sdcard::SdCard card(mDisplay);
-    bool success = false;
-    if (mFakeUpdates)
-    {
-        log_i("Reading file data to simulate forecasted conditions API response");
-        success = card.getFakeWeatherData(
-            apiResponse,
-            provider.getFileSystemDirectory() + (const char *)"forecast.json"
-        );
-    }
-    else
-    {
-        auto url = provider.getForecastedWeatherUrl();
-        log_d("URL returned: %s", url.c_str());
-        success = connection.getApiResponse(apiResponse, url);
-    }
+    auto currentSuccess = updateCurrent(connection, provider);
+    auto hourlySuccess = updateHourly(connection, provider);
+    auto forecastSuccess = updateForecast(connection, provider);
 
-    if (success)
-    {
-        log_d("Converting JSON to current weather data");
-        provider.toCurrentWeather(mForecast[0], apiResponse);
-        provider.toHourlyWeather(mHourlyForecast, apiResponse);
-
-        log_d("Converting JSON to forecast weather data");
-        provider.toForecastedWeather(mForecast, apiResponse);
-        mLastForecastTime = time(nullptr);
-    }
-    else
-    {
-        log_w("Failed to get API response");
-    }
-    apiResponse.clear();
-    return success;
+    return (currentSuccess && hourlySuccess && forecastSuccess);
 }
 
 const DailyWeather& Weather::getDailyWeather(const uint8_t offset) const

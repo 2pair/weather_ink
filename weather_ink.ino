@@ -104,7 +104,8 @@ uint32_t updateWeather(weather::Weather& weatherData, const weatherprovider::Wea
     if (!connection.isConnected())
     {
         // Gotta get online!
-        return 15;
+        static constexpr uint32_t connectionRetrySeconds = 15;
+        return connectionRetrySeconds;
     }
     static constexpr uint8_t retries = 10;
     static constexpr uint16_t retryDelaySeconds = 5;

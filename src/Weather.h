@@ -32,6 +32,11 @@ class Weather
             const weatherprovider::WeatherProvider& provider
         );
 
+        bool updateHourly(
+            network::Network& connection,
+            const weatherprovider::WeatherProvider& provider
+        );
+
         bool updateForecast(
             network::Network& connection,
             const weatherprovider::WeatherProvider& provider
