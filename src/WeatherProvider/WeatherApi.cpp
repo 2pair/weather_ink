@@ -39,41 +39,52 @@ size_t WeatherApi::getForecastUpdateIntervalSeconds() const
 
 std::string WeatherApi::getCurrentWeatherUrl() const
 {
-    return getForecastedWeatherUrl();
-    //current weather is a subset of the forecasted weather, and the forecast also has hourly data
+    // Current weather is a subset of the forecasted weather, however the free tier 
+    // doesn't let us get more than 3 days at a time, so this needs to be a separate call.
+    // We get 1,000,000 calls a month though, so it's fine.
 
-    // const char* format = (const char *)F("current.json?q=%.4f,%.4f&key=%s");
-    // int resultSize = std::snprintf( nullptr, 0, format, mLatitude, mLongitude, mApiKey.c_str()) + 1;
-    // auto size = static_cast<size_t>(resultSize);
-    // std::vector<char> endpoint;
-    // endpoint.reserve(size);
+    const char* format = (const char *)F("current.json?q=%.4f,%.4f&key=%s");
+    int resultSize = std::snprintf( nullptr, 0, format, mLatitude, mLongitude, mApiKey.c_str()) + 1;
+    auto size = static_cast<size_t>(resultSize);
+    std::vector<char> endpoint;
+    endpoint.reserve(size);
 
-    // std::snprintf(endpoint.data(), size, format, mLatitude, mLongitude, mApiKey.c_str());
-    // return std::string(cBaseUrl).append(std::string(endpoint.data()));
+    std::snprintf(endpoint.data(), size, format, mLatitude, mLongitude, mApiKey.c_str());
+    return std::string(cBaseUrl).append(std::string(endpoint.data()));
 }
 
-std::string WeatherApi::getForecastedWeatherUrl() const
+std::string WeatherApi::getForecastedWeatherUrl(const uint8_t days, const uint8_t offset) const
 {
-    // Reduce response size by only getting specific data
-    std::string fieldFilter = (const char*)F(
-        "&current_fields=last_updated_epoch,temp_f,feelslike_f,humidity,pressure_mb,"
-            "vis_miles,wind_mph,gust_mph,wind_degree,condition,precip_in"
-        "&day_fields=mintemp_f,maxtemp_f,daily_chance_of_rain,daily_chance_of_snow,"
-            "condition,totalprecip_in,totalsnow_cm,avghumidity,avgvis_miles,maxwind_mph"
-        "&hour_fields=time,time_epoch,temp_f,feelslike_f,chance_of_rain,chance_of_snow,"
-            "condition,precip_in,snow_cm,pressure_mb,humidity,wind_mph,wind_degree"
-    );
-    static constexpr size_t days = 4;
-    const char* format = (const char *)F("forecast.json?q=%f,%f&days=%d&key=%s");
-    int resultSize = std::snprintf(nullptr, 0, format, mLatitude, mLongitude, days, mApiKey.c_str()) + 1;
+    uint64_t atTime = time(nullptr) + (cSecondsPerDay * offset);
+    log_d("Getting %d days of forecast starting at time %d", days, atTime);
+    const char* format = (const char *)F("forecast.json?q=%f,%f&dt=%d&days=%d&key=%s");
+    int resultSize = std::snprintf(nullptr, 0, format, mLatitude, mLongitude, atTime, days, mApiKey.c_str()) + 1;
     auto size = static_cast<size_t>(resultSize);
     std::vector<char> endpoint;
     endpoint.reserve(size);
 
     std::snprintf(endpoint.data(), size, format, mLatitude, mLongitude, days, mApiKey.c_str());
     std::string endpoint_data = endpoint.data();
-    // the field filter was not doing anything
-    return std::string(cBaseUrl).append(endpoint_data); //.append(fieldFilter);
+    return std::string(cBaseUrl).append(endpoint_data);
+}
+
+std::string WeatherApi::getHourlyWeatherUrl() const
+{
+    return getForecastedWeatherUrl(1, 0);
+}
+
+std::string WeatherApi::getForecastedWeatherUrl() const
+{
+    // Reduce response size by only getting specific data
+    // std::string fieldFilter = (const char*)F(
+    //     "&current_fields=last_updated_epoch,temp_f,feelslike_f,humidity,pressure_mb,"
+    //         "vis_miles,wind_mph,gust_mph,wind_degree,condition,precip_in"
+    //     "&day_fields=mintemp_f,maxtemp_f,daily_chance_of_rain,daily_chance_of_snow,"
+    //         "condition,totalprecip_in,totalsnow_cm,avghumidity,avgvis_miles,maxwind_mph"
+    //     "&hour_fields=time,time_epoch,temp_f,feelslike_f,chance_of_rain,chance_of_snow,"
+    //         "condition,precip_in,snow_cm,pressure_mb,humidity,wind_mph,wind_degree"
+    // );
+    return getForecastedWeatherUrl(3, 1);
 }
 
 void WeatherApi::toCurrentWeather(

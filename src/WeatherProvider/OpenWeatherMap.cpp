@@ -37,6 +37,11 @@ std::string OpenWeatherMap::getCurrentWeatherUrl() const
     return std::string(cBaseUrl).append(std::string(endpoint.data()));
 }
 
+std::string OpenWeatherMap::getHourlyWeatherUrl() const
+{
+    //TODO
+}
+
 std::string OpenWeatherMap::getForecastedWeatherUrl() const
 {
     static constexpr size_t days = 4;

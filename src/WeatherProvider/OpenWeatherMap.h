@@ -23,6 +23,8 @@ class OpenWeatherMap : public WeatherProvider
 
         std::string getCurrentWeatherUrl() const override;
 
+        std::string getHourlyWeatherUrl() const override;
+
         std::string getForecastedWeatherUrl() const override;
 
         void toCurrentWeather(

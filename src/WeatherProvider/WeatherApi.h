@@ -24,6 +24,8 @@ class WeatherApi : public WeatherProvider
 
         std::string getCurrentWeatherUrl() const override;
 
+        std::string getHourlyWeatherUrl() const override;
+
         std::string getForecastedWeatherUrl() const override;
 
         void toCurrentWeather(
@@ -43,6 +45,10 @@ class WeatherApi : public WeatherProvider
     protected:
         // https://www.weatherapi.com/docs/weather_conditions.json
         weather::Condition codeToConditions(const uint16_t code) const override;
+
+        // Get 'days' number of forecasted days, at 'offset' number of days in the future. 
+        // offset == 0 for today's forecast.
+        std::string getForecastedWeatherUrl(const uint8_t days, const uint8_t offset) const;
 
         static const std::string cBaseUrl;
 

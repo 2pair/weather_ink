@@ -33,6 +33,8 @@ class WeatherProvider
 
         virtual std::string getCurrentWeatherUrl() const = 0;
 
+        virtual std::string getHourlyWeatherUrl() const = 0;
+        
         virtual  std::string getForecastedWeatherUrl() const = 0;
 
         virtual void toCurrentWeather(
