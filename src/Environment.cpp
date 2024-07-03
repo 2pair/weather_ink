@@ -21,9 +21,9 @@ Environment setEnvironmentFromFile(const std::string& filename, Inkplate& displa
         env.latitude = envFile["latitude"] | cLatitude;
         env.longitude = envFile["longitude"] | cLongitude;
 
-        std::string ssid = cSsid;//envFile["ssid"] | cSsid;
+        std::string ssid = envFile["ssid"] | cSsid;
         strlcpy(env.ssid, ssid.c_str(), cSsidLength);
-        std::string pass = cPass;//envFile["pass"] | cPass;
+        std::string pass = envFile["pass"] | cPass;
         strlcpy(env.pass, pass.c_str(), cPassLength);
 
         std::string provider = envFile["primaryProvider"] | cProvider;
