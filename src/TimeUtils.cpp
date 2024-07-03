@@ -29,8 +29,18 @@ time_t timeutils::localTime(const int8_t tzOffset)
         log_w("Time function was not able to determine the calendar time");
     }
     auto timeNow = localTime(timeUtc, tzOffset);
-    log_v("Current epoch time is %llu, with tz_offset of %d in timezone is %llu", timeUtc, tzOffset, timeNow);
+    log_v("Current epoch time is %d, with tz_offset of %d in timezone is %d", timeUtc, tzOffset, timeNow);
     return timeNow;
+}
+
+size_t timeutils::dayIndexFromEpochTimestamp(const time_t timestamp)
+{
+    static constexpr size_t cStartingOffset = 4; // Unix time starts on a Thursday
+    static constexpr size_t cDaysPerWeek = 7;
+    // +1 so that midnight is counted as the following day instead of the preceding day
+    const auto day = (((timestamp + 1) / cSecondsPerDay) + cStartingOffset) % cDaysPerWeek;
+    log_d("Timestamp %d mapped to %d", timestamp, day);
+    return day;
 }
 
 std::string timeutils::dayNameFromEpochTimestamp(const time_t timestamp)
@@ -44,10 +54,8 @@ std::string timeutils::dayNameFromEpochTimestamp(const time_t timestamp)
         (const char*)friday,
         (const char*)saturday
     };
-    static constexpr size_t cStartingOffset = 4; // Unix time starts on a Thursday
-    static constexpr size_t cDaysPerWeek = 7;
-    // +1 so that midnight is counted as the following day instead of the preceding day
-    auto day = (((timestamp + 1) / cSecondsPerDay) + cStartingOffset) % cDaysPerWeek;
+    const auto day = dayIndexFromEpochTimestamp(timestamp);
+    log_d("Timestamp %d mapped to %s", timestamp, dayArr[day]);
     return std::string(dayArr[day]);
 }
 
@@ -71,5 +79,6 @@ time_t timeutils::timeStrToEpochTime(const std::string &timeString, const std::s
 {
     tm timeInfo;
     strptime(timeString.c_str(), format.c_str(), &timeInfo);
+    log_d("timestr %s format %s", timeString.c_str(), format.c_str());
     return mktime(&timeInfo);
 }

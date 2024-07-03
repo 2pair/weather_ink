@@ -71,21 +71,15 @@ const std::string Icon::getIconNameForConditions(const weather::DailyWeather& co
     using namespace weather;
 
     // Get Moon icons only if this is todays weather and its nighttime.
-    auto nowTime = time(nullptr);
-    log_d("now time is %llu", nowTime);
-    bool getMoonPhase = (
-        (
-            timeutils::dayNameFromEpochTimestamp(timeutils::localTime(conditions.timestamp, conditions.timeZone)) ==
-            timeutils::dayNameFromEpochTimestamp(timeutils::localTime(nowTime, conditions.timeZone))
-        ) &&
-        isNightTime(conditions)
-    );
-    log_v("Getting nighttime icon for conditions with timestamp %llu mapped to day %s, at timestamp %llu mapped to day %s",
-        conditions.timestamp, 
-        timeutils::dayNameFromEpochTimestamp(timeutils::localTime(conditions.timestamp, conditions.timeZone)).c_str(),
-        nowTime,
-        timeutils::dayNameFromEpochTimestamp(timeutils::localTime(nowTime, conditions.timeZone)).c_str()
-    );
+    const auto nowTime = time(nullptr);
+    log_v("now time is %d", nowTime);
+    const auto conditionsDay = timeutils::dayIndexFromEpochTimestamp(timeutils::localTime(conditions.timestamp, conditions.timeZone));
+    const auto nowDay = timeutils::dayIndexFromEpochTimestamp(timeutils::localTime(nowTime, conditions.timeZone));
+    bool getMoonPhase = (conditionsDay == nowDay && isNightTime(conditions));
+    if (getMoonPhase)
+    {
+        log_d("Getting nighttime icon for conditions with timestamp %d", conditions.timestamp);
+    }
     switch (conditions.condition)
     {
         case Condition::clear:

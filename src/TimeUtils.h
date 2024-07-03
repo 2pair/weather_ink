@@ -14,6 +14,10 @@ namespace timeutils {
 time_t localTime(const time_t epochTime, const int8_t tzOffset);
 time_t localTime(const int8_t tzOffset);
 
+// Gets the index of the day of the week for a given epoch timestamp.
+// Sunday == 0, Saturday == 6
+size_t dayIndexFromEpochTimestamp(const time_t timestamp);
+
 // Gets the name of the day of the week for a given epoch timestamp.
 std::string dayNameFromEpochTimestamp(const time_t timestamp);
 

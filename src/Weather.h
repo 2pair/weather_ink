@@ -49,10 +49,10 @@ class Weather
         const hourly_forecast& getHourlyWeather() const;
 
         // Print's the days weather to the serial console
-        void printDailyWeather(const DailyWeather& dailyWeather) const;
+        static void printDailyWeather(const DailyWeather& dailyWeather);
 
         // Print's the hours weather to the serial console
-        void printHourlyWeather(const HourlyWeather& hourlyWeather) const;
+        static void printHourlyWeather(const HourlyWeather& hourlyWeather);
 
         time_t getLastForecastTime() const;
 

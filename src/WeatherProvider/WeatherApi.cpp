@@ -23,8 +23,11 @@ int8_t timeZoneFromApiResponse(const JsonDocument& apiResponse)
         apiResponse["location"]["localtime"],
         (const char*)F("%F %H:%M")
     );
-    time_t collectionTimestamp = apiResponse["location"]["localtime_epoch"];
-    return static_cast<int64_t>(localTime - collectionTimestamp) / cSecondsPerHour;
+    time_t epochTime = apiResponse["location"]["localtime_epoch"];
+    log_d("localtime is %d, epoch time is %d", localTime, epochTime);
+    auto tzOffset = difftime(localTime, epochTime) / cSecondsPerHour;
+    log_d("tz offset %f", tzOffset);
+    return static_cast<int8_t>(std::floor(tzOffset));
 }
 
 size_t WeatherApi::getWeatherUpdateIntervalSeconds() const
@@ -249,7 +252,8 @@ uint8_t WeatherApi::toHourlyWeather(
             auto const hourlyData =
                 forecastApiResponse["forecast"]["forecastday"][day]["hour"][responseIter];
             log_d("getting hourly data for %s", hourlyData["time"].as<std::string>().c_str());
-            hourlyWeather.timestamp = hourlyData["time_epoch"];
+            hourlyWeather.timestamp = hourlyData["time_epoch"].as<uint64_t>();
+            log_d("epoch time for hour was %d", hourlyWeather.timestamp);
             if (hourlyWeather.timestamp <= lastDt)
             {
                 reorder = true;

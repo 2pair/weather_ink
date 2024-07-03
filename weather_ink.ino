@@ -25,7 +25,7 @@ RTC_DATA_ATTR Environment env;
 RTC_DATA_ATTR weather::Weather gWeather(gDisplay);
 
 /* Returns how long to wait until the next update, in seconds.
-   It the weather could not be updated returns 0.   
+   It the weather could not be updated returns 0.
 */
 uint32_t updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider);
 void draw(const weather::Weather& weatherData);
@@ -51,7 +51,7 @@ void setup()
     gWeather.fakeUpdates(env.fakeApiUpdates);
 
     gDisplay.setRotation(1);
-    log_d("last forecast time: %llu"), static_cast<uint64_t>(gWeather.getLastForecastTime());
+    log_d("last forecast time: %d"), static_cast<uint64_t>(gWeather.getLastForecastTime());
 }
 
 void loop()

@@ -159,6 +159,7 @@ void Renderer::drawHourlyForecast(
     size_t offset = 0;
     for (size_t i = 0; i < forecast.size(); i++)
     {
+        weather::Weather::printHourlyWeather(forecast[i]);
         if (forecast[i].timestamp > timeutils::localTime(forecast[i].timeZone))
         {
             offset = i;

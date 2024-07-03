@@ -75,7 +75,7 @@ bool Weather::updateForecast(network::Network& connection, const weatherprovider
     if (success)
     {
         log_d("Converting JSON to forecast weather data");
-        provider.toForecastedWeather(mForecast, apiResponse);
+        auto daysForecast = provider.toForecastedWeather(mForecast, apiResponse);
         mLastForecastTime = time(nullptr);
     }
     else
@@ -134,10 +134,10 @@ const hourly_forecast& Weather::getHourlyWeather() const
     return mHourlyForecast;
 }
 
-void Weather::printDailyWeather(const DailyWeather& dailyWeather) const
+void Weather::printDailyWeather(const DailyWeather& dailyWeather)
 {
     log_i("--------- Daily Weather ---------");
-    log_i("Data collected at: %llu", dailyWeather.timestamp);
+    log_i("Data for day at timestamp: %d (tz %d)", dailyWeather.timestamp, dailyWeather.timeZone);
 
     log_i(
         "Current Temp:  %.2f (feels like %.2f)",
@@ -172,17 +172,17 @@ void Weather::printDailyWeather(const DailyWeather& dailyWeather) const
     );
 
     log_i(
-        "Sunrise: %llu  Sunset:  %llu",
+        "Sunrise: %d  Sunset:  %d",
         dailyWeather.sunrise,
         dailyWeather.sunset
     );
     log_i("---------------------------------");
 }
 
-void Weather::printHourlyWeather(const HourlyWeather& hourlyWeather) const
+void Weather::printHourlyWeather(const HourlyWeather& hourlyWeather)
 {
     log_i("--------- Hourly Weather ---------");
-    log_i("Data collected at: %llu", hourlyWeather.timestamp);
+    log_i("Data for hour at: %d (tz %d)", hourlyWeather.timestamp, hourlyWeather.timeZone);
 
     log_i(
         "Current Temp:  %.2f (feels like %.2f)",
