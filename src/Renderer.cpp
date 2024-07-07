@@ -52,6 +52,8 @@ void Renderer::update(const weather::Weather& weatherData)
         if (forecast.condition == weather::Condition::unknownCondition)
         {
             // This indicates we don't have forecast for this day, or likely any beyond it.
+            log_w("Forecast for day at index %d had unknown conditions", i);
+            weather::Weather::printDailyWeather(weatherData.getDailyWeather(i));
             break;
         }
         auto y = 0 + (i - 1) * 200;

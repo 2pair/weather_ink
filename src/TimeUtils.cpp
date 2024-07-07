@@ -79,6 +79,6 @@ time_t timeutils::timeStrToEpochTime(const std::string &timeString, const std::s
 {
     tm timeInfo;
     strptime(timeString.c_str(), format.c_str(), &timeInfo);
-    log_d("timestr %s format %s", timeString.c_str(), format.c_str());
+    log_v("timestr %s format %s", timeString.c_str(), format.c_str());
     return mktime(&timeInfo);
 }

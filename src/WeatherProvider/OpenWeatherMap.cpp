@@ -57,7 +57,7 @@ std::string OpenWeatherMap::getForecastedWeatherUrl() const
 
 void OpenWeatherMap::toCurrentWeather(
     weather::DailyWeather& currentWeather,
-    JsonDocument& currentApiResponse) const
+    const JsonDocument& currentApiResponse) const
 {
     using namespace weather;
 
@@ -89,7 +89,7 @@ void OpenWeatherMap::toCurrentWeather(
 
 uint8_t OpenWeatherMap::toForecastedWeather(
     weather::daily_forecast& forecastedWeather,
-    JsonDocument& forecastApiResponse) const
+    const JsonDocument& forecastApiResponse) const
 {
     using namespace weather;
 
@@ -152,7 +152,7 @@ uint8_t OpenWeatherMap::toForecastedWeather(
 
 uint8_t OpenWeatherMap::toHourlyWeather(
     weather::hourly_forecast& forecastedWeather,
-    JsonDocument& forecastApiResponse) const
+    const JsonDocument& forecastApiResponse) const
 {
     //TODO...
     return 0;

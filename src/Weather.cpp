@@ -20,101 +20,51 @@ Weather::Weather(Inkplate& display)
 
 bool Weather::updateCurrent(network::Network& connection, const weatherprovider::WeatherProvider& provider)
 {
-    JsonDocument apiResponse;
-    sdcard::SdCard card(mDisplay);
-    bool success = false;
+    time_t updatedTime;
     if (mFakeUpdates)
     {
-        log_i("Reading file data to simulate current conditions API response");
-        success = card.getFakeWeatherData(
-            apiResponse,
-            provider.getFileSystemDirectory() + (const char *)"current.json"
-        );
+        sdcard::SdCard card(mDisplay);
+        updatedTime = provider.toCurrentWeather(mForecast[0], card);
     }
     else
     {
-        auto url = provider.getCurrentWeatherUrl();
-        log_d("URL returned: %s", url.c_str());
-        success = connection.getApiResponse(apiResponse, url);
+        updatedTime = provider.toCurrentWeather(mForecast[0], connection);
     }
-
-    if (success) {
-        log_d("Converting JSON to current weather data");
-        provider.toCurrentWeather(mForecast[0], apiResponse);
-    }
-    else
-    {
-        log_w("Failed to get API response for current weather");
-    }
-    apiResponse.clear();
-    return success;
+    return updatedTime != 0;
 }
 
 bool Weather::updateHourly(network::Network& connection, const weatherprovider::WeatherProvider& provider)
 {
-    JsonDocument apiResponse;
-    sdcard::SdCard card(mDisplay);
-    bool success = false;
+    time_t updatedTime;
     if (mFakeUpdates)
     {
-        log_i("Reading file data to simulate hourly conditions API response");
-        success = card.getFakeWeatherData(
-            apiResponse,
-            provider.getFileSystemDirectory() + (const char *)"forecast.json"
-        );
+        sdcard::SdCard card(mDisplay);
+        updatedTime = provider.toHourlyWeather(mHourlyForecast, card);
     }
     else
     {
-        auto url = provider.getHourlyWeatherUrl();
-        log_d("URL returned: %s", url.c_str());
-        success = connection.getApiResponse(apiResponse, url);
+        updatedTime = provider.toHourlyWeather(mHourlyForecast, connection);
     }
-
-    if (success) {
-        log_d("Converting JSON to hourly weather data");
-        provider.toHourlyWeather(mHourlyForecast, apiResponse);
-    }
-    else
-    {
-        log_w("Failed to get API response for hourly weather");
-    }
-    apiResponse.clear();
-    return success;
+    return updatedTime != 0;
 }
 
 bool Weather::updateForecast(network::Network& connection, const weatherprovider::WeatherProvider& provider)
 {
-    JsonDocument apiResponse;
-    sdcard::SdCard card(mDisplay);
-    bool success = false;
+    time_t updatedTime;
     if (mFakeUpdates)
     {
-        log_i("Reading file data to simulate forecasted conditions API response");
-        success = card.getFakeWeatherData(
-            apiResponse,
-            provider.getFileSystemDirectory() + (const char *)"forecast.json"
-        );
-
+        sdcard::SdCard card(mDisplay);
+        updatedTime = provider.toForecastedWeather(mForecast, card);
     }
     else
     {
-        auto url = provider.getForecastedWeatherUrl();
-        log_d("URL returned: %s", url.c_str());
-        success = connection.getApiResponse(apiResponse, url);
+        updatedTime = provider.toForecastedWeather(mForecast, connection);
     }
-
-    if (success)
+    if (updatedTime)
     {
-        log_d("Converting JSON to forecast weather data");
-        auto daysForecast = provider.toForecastedWeather(mForecast, apiResponse);
-        mLastForecastTime = time(nullptr);
+        mLastForecastTime = updatedTime;
     }
-    else
-    {
-        log_w("Failed to get API response for forecasted weather");
-    }
-    apiResponse.clear();
-    return success;
+    return updatedTime != 0;
 }
 
 bool Weather::updateWeather(network::Network& connection, const weatherprovider::WeatherProvider& provider)
@@ -139,7 +89,7 @@ const hourly_forecast& Weather::getHourlyWeather() const
 void Weather::printDailyWeather(const DailyWeather& dailyWeather)
 {
     log_i("--------- Daily Weather ---------");
-    log_i("Data for day at timestamp: %d (tz %d)", dailyWeather.timestamp, dailyWeather.timeZone);
+    log_i("Data for day at timestamp: %llu (tz %d)", dailyWeather.timestamp, dailyWeather.timeZone);
 
     log_i(
         "Current Temp:  %.2f (feels like %.2f)",
@@ -174,7 +124,7 @@ void Weather::printDailyWeather(const DailyWeather& dailyWeather)
     );
 
     log_i(
-        "Sunrise: %d  Sunset:  %d",
+        "Sunrise: %llu  Sunset:  %llu",
         dailyWeather.sunrise,
         dailyWeather.sunset
     );
@@ -184,7 +134,7 @@ void Weather::printDailyWeather(const DailyWeather& dailyWeather)
 void Weather::printHourlyWeather(const HourlyWeather& hourlyWeather)
 {
     log_i("--------- Hourly Weather ---------");
-    log_i("Data for hour at: %d (tz %d)", hourlyWeather.timestamp, hourlyWeather.timeZone);
+    log_i("Data for hour at: %llu (tz %d)", hourlyWeather.timestamp, hourlyWeather.timeZone);
 
     log_i(
         "Current Temp:  %.2f (feels like %.2f)",

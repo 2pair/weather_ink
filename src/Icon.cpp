@@ -72,7 +72,6 @@ const std::string Icon::getIconNameForConditions(const weather::DailyWeather& co
 
     // Get Moon icons only if this is todays weather and its nighttime.
     const auto nowTime = time(nullptr);
-    log_v("now time is %d", nowTime);
     const auto conditionsDay = timeutils::dayIndexFromEpochTimestamp(timeutils::localTime(conditions.timestamp, conditions.timeZone));
     const auto nowDay = timeutils::dayIndexFromEpochTimestamp(timeutils::localTime(nowTime, conditions.timeZone));
     bool getMoonPhase = (conditionsDay == nowDay && isNightTime(conditions));

@@ -5,9 +5,9 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <time.h>
+#include <esp_sntp.h>
 
 #include "TimeUtils.h"
-#include <esp_sntp.h>
 
 
 using namespace network;
@@ -78,7 +78,6 @@ bool Network::getApiResponse(JsonDocument& apiResponse, const std::string& url)
         waitForConnection(15);
     }
     HTTPClient http;
-    //http.getStream().setNoDelay(true);
     http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
     http.getStream().setTimeout(10);
     http.begin(url.c_str());
@@ -89,10 +88,9 @@ bool Network::getApiResponse(JsonDocument& apiResponse, const std::string& url)
     {
         auto response = http.getString();
         log_d("Begin deserialize API response:");
-        //ReadLoggingStream loggingStream(http.getStream(), Serial);
-        //DeserializationError error = deserializeJson(apiResponse, loggingStream);
-        //log_v("\n\n%s\n\n", response.c_str());
-        DeserializationError error = deserializeJson(apiResponse, response);//http.getStream());
+        // streaming the HTTP response into the deserializer causes a chunk out of order
+        // bug for chunked responses, like WeatherApi returns.
+        DeserializationError error = deserializeJson(apiResponse, response);
         if (error)
         {
             log_w(

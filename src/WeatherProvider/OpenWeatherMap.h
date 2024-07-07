@@ -27,23 +27,23 @@ class OpenWeatherMap : public WeatherProvider
 
         std::string getForecastedWeatherUrl() const override;
 
-        void toCurrentWeather(
-            weather::DailyWeather& currentWeather,
-            JsonDocument& currentApiResponse) const override;
-
-        uint8_t toForecastedWeather(
-            weather::daily_forecast& forecastedWeather,
-            JsonDocument& forecastApiResponse) const override;
-
-        uint8_t toHourlyWeather(
-            weather::hourly_forecast& forecastedWeather,
-            JsonDocument& forecastApiResponse) const override;
-
         std::string getFileSystemDirectory() const override;
 
     protected:
         // https://openweathermap.org/weather-conditions
          weather::Condition codeToConditions(const uint16_t code) const override;
+
+        void toCurrentWeather(
+            weather::DailyWeather& currentWeather,
+            const JsonDocument& currentApiResponse) const override;
+
+        uint8_t toForecastedWeather(
+            weather::daily_forecast& forecastedWeather,
+            const JsonDocument& forecastApiResponse) const override;
+
+        uint8_t toHourlyWeather(
+            weather::hourly_forecast& forecastedWeather,
+            const JsonDocument& forecastApiResponse) const override;
 
         static const std::string cBaseUrl;
 

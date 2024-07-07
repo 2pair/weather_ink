@@ -28,17 +28,13 @@ class WeatherApi : public WeatherProvider
 
         std::string getForecastedWeatherUrl() const override;
 
-        void toCurrentWeather(
-            weather::DailyWeather& currentWeather,
-            JsonDocument& currentApiResponse) const override;
-
-        uint8_t toForecastedWeather(
+        /*  This needs to be overriden because the API only lets us get 3 days of forecast
+            data, but also only lets us get a single day of forecast data if given a
+            date offset.
+        */
+        time_t toForecastedWeather(
             weather::daily_forecast& forecastedWeather,
-            JsonDocument& forecastApiResponse) const override;
-
-        uint8_t toHourlyWeather(
-            weather::hourly_forecast& forecastedWeather,
-            JsonDocument& forecastApiResponse) const override;
+            network::Network& connection) const override;
 
         std::string getFileSystemDirectory() const override;
 
@@ -46,9 +42,34 @@ class WeatherApi : public WeatherProvider
         // https://www.weatherapi.com/docs/weather_conditions.json
         weather::Condition codeToConditions(const uint16_t code) const override;
 
-        // Get 'days' number of forecasted days, at 'offset' number of days in the future. 
+        void toCurrentWeather(
+            weather::DailyWeather& currentWeather,
+            const JsonDocument& currentApiResponse) const override;
+
+        /*  Populate data for a single day. Unless otherwise specified, it is assumed that
+            the forecast data at index 0 is the coorsponding data.
+        */
+        void toForecastedWeather(
+            weather::DailyWeather& dailyWeather,
+            const JsonDocument& forecastApiResponse,
+            const size_t index = 0) const;
+
+        uint8_t toForecastedWeather(
+            weather::daily_forecast& forecastedWeather,
+            const JsonDocument& forecastApiResponse) const override;
+
+        uint8_t toHourlyWeather(
+            weather::hourly_forecast& forecastedWeather,
+            const JsonDocument& forecastApiResponse) const override;
+
+        // Get 'days' number of forecasted days, at 'offset' number of days in the future.
         // offset == 0 for today's forecast.
         std::string getForecastedWeatherUrl(const uint8_t days, const uint8_t offset) const;
+
+        void setAstroData(
+            weather::DailyWeather& dailyWeather,
+            const JsonObjectConst& astroData,
+            const std::string& dateTime) const;
 
         static const std::string cBaseUrl;
 
