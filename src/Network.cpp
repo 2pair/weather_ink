@@ -152,6 +152,7 @@ void Network::handleWiFiEvent(arduino_event_id_t event, arduino_event_info_t eve
         case ARDUINO_EVENT_WIFI_STA_GOT_IP6:
             // Connection is fully established
             connectionAttempts = 0;
+            log_v("connection fully established, clearing connection attempts counter");
         case ARDUINO_EVENT_WIFI_READY:
         case ARDUINO_EVENT_WIFI_SCAN_DONE:
         case ARDUINO_EVENT_WIFI_STA_START:
@@ -165,8 +166,8 @@ void Network::handleWiFiEvent(arduino_event_id_t event, arduino_event_info_t eve
             connectionFailure = true;
             break;
     }
-    log_d("connectionActive is %s 2", (connectionActive) ? "true" : "false");
-    log_d("connectilFailure is %s", (connectionFailure) ? "true" : "false");
+    log_d("connectionActive is %s", (connectionActive) ? "true" : "false");
+    log_d("connectionFailure is %s", (connectionFailure) ? "true" : "false");
     log_d("connection attempts is %d", connectionAttempts);
     if (connectionActive && connectionFailure)
     {
