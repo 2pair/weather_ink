@@ -168,7 +168,7 @@ void Network::handleWiFiEvent(arduino_event_id_t event, arduino_event_info_t eve
     }
     log_d("connectionActive is %s", (connectionActive) ? "true" : "false");
     log_d("connectionFailure is %s", (connectionFailure) ? "true" : "false");
-    log_d("connection attempts is %d", connectionAttempts);
+    log_d("connection attempts is %d", connectionAttempts + 1);
     if (connectionActive && connectionFailure)
     {
         connectionAttempts++;
