@@ -4,6 +4,8 @@ build/**
 **/default_env.h
 .vs
 .vscode
+logs/**
+
 # Prerequisites
 *.d
 

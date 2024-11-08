@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include <WiFiGeneric.h>
 #include <ArduinoJson.h>
 
 
@@ -16,14 +17,19 @@ class Network
 
     void shutDown();
 
-    bool isConnected();
+    static bool isConnected();
 
     bool getApiResponse(JsonDocument& apiResponse, const std::string& url);
 
   private:
-    void waitForConnection(const uint8_t waitTimeSec);
+    wifi_event_id_t mEventId;
+
+    bool waitForConnection(const uint8_t waitTimeSec);
 
     void setTimeNTP();
+
+    static void handleWiFiEvent(arduino_event_id_t event, arduino_event_info_t eventInfo);
+
 };
 
 }

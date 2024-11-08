@@ -90,6 +90,10 @@ std::string SdCard::findFileWithPrefix(const std::string& dirPath, const std::st
         }
     }
     dir.close();
+    if (foundName.empty())
+    {
+        log_d("Failed to find file with prefix %s in dir %s", dirPath.c_str(), prefix.c_str());
+    }
     return foundName;
 }
 

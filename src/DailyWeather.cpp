@@ -2,6 +2,8 @@
 
 #include <string>
 #include <WString.h>
+#include <cstdlib>
+#include <esp32-hal-log.h>
 
 #include "TimeUtils.h"
 
@@ -108,19 +110,33 @@ weather::MoonPhase weather::stringToMoonPhase(const std::string moonPhase)
 }
 
 
-bool weather::isNightTime(const DailyWeather& dailyWeather)
+bool weather::isNighttime(const DailyWeather& currentWeather)
 {
-    // only return night status for today's weather
-    if (dailyWeather.sunset != 0 and dailyWeather.sunrise != 0)
+    const auto& sunrise = timeutils::localTime(currentWeather.sunrise, currentWeather.timeZone);
+    const auto& sunset = timeutils::localTime(currentWeather.sunset, currentWeather.timeZone);
+    const auto nowTime = timeutils::localTime(currentWeather.timeZone);
+    if (sunset != 0 && sunrise != 0)
     {
+        log_d("the time is %d", time(nullptr));
+        log_d("Sunset and sunrise data available. sunrise %llu sunset %llu timestamp %d",
+        sunrise, sunset, nowTime);
+        if (
+            std::abs(difftime(nowTime, sunset)) > cSecondsPerDay ||
+            std::abs(difftime(nowTime, sunrise)) > cSecondsPerDay
+        )
+        {
+            log_w("sunrise and sunset values are not from the current day, returning false.");
+            return false;
+        }
         return (
-            dailyWeather.timestamp > dailyWeather.sunset || // before 12 AM
-            dailyWeather.timestamp < dailyWeather.sunrise  // after 12 AM
+            nowTime > sunset || // nighttime before 12 AM
+            nowTime < sunrise   // nighttime after 12 AM
         );
     }
     else // fall back to rough times
     {
-        auto timeOfDay = timeutils::hour24FromEpochTimestamp(dailyWeather.timestamp);
+        log_d("Sunset and sunrise data not available. using 8pm and 6am. timestamp %d", nowTime);
+        auto timeOfDay = timeutils::hour24FromEpochTimestamp(nowTime);
         return timeOfDay > 20 ||  timeOfDay < 6;
     }
 }

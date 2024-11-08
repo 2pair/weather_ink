@@ -24,10 +24,9 @@ Inkplate gDisplay(INKPLATE_3BIT);
 RTC_DATA_ATTR Environment env;
 RTC_DATA_ATTR weather::Weather gWeather(gDisplay);
 
-/* Returns how long to wait until the next update, in seconds.
-   It the weather could not be updated returns 0.
-*/
-uint32_t updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider);
+// Returns how long to wait until the next update, in seconds.IReturns 0 iff the weather could not be updated.
+std::pair<bool, uint32_t> updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider);
+// Draw the data to the display.
 void draw(const weather::Weather& weatherData);
 
 void setup()
@@ -58,17 +57,19 @@ void loop()
 {
     constexpr uint32_t cMinSleepTimeSecs = 15;
     uint32_t sleepTimeSecs = 0;
+    bool weather_updated = false;
     if (std::string(env.provider) == "WeatherApi")
     {
         weatherprovider::WeatherApi provider(env.latitude, env.longitude, env.city, env.apiKey);
-        sleepTimeSecs = updateWeather(gWeather, provider);
+        std::tie(weather_updated, sleepTimeSecs) = updateWeather(gWeather, provider);
     }
     else // Only other provider is OpenWeatherMap
     {
         weatherprovider::OpenWeatherMap provider(env.latitude, env.longitude, env.city, env.apiKey);
-        sleepTimeSecs = updateWeather(gWeather, provider);
+        std::tie(weather_updated, sleepTimeSecs) = updateWeather(gWeather, provider);
     }
-    if (sleepTimeSecs)
+
+    if (weather_updated)
     {
         draw(gWeather);
     }
@@ -77,10 +78,7 @@ void loop()
         // weather was not updated. Try again after a little
         sleepTimeSecs = cMinSleepTimeSecs;
     }
-    log_d("Now sleeping for %u seconds (%u minutes)...",
-        sleepTimeSecs,
-        (sleepTimeSecs / 60)
-    );
+    log_d("Now sleeping for %u seconds (%u minutes)...", sleepTimeSecs, (sleepTimeSecs / 60));
     // pause to finish writing
     delay(10);
     Serial.end();
@@ -90,7 +88,7 @@ void loop()
     esp_deep_sleep_start();
 }
 
-uint32_t updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider)
+std::pair<bool, uint32_t> updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider)
 {
     network::Network connection(env.ssid, env.pass);
     // Delay between API calls. 1 minute when reading from SD, minimum 15 minutes otherwise.
@@ -103,9 +101,9 @@ uint32_t updateWeather(weather::Weather& weatherData, const weatherprovider::Wea
     bool updated = false;
     if (!connection.isConnected())
     {
+        log_d("Connection has not been established, skipping update");
         // Gotta get online!
-        static constexpr uint32_t connectionRetrySeconds = 15;
-        return connectionRetrySeconds;
+        return std::make_pair(updated, 0);
     }
     static constexpr uint8_t retries = 10;
     static constexpr uint16_t retryDelaySeconds = 5;
@@ -122,7 +120,7 @@ uint32_t updateWeather(weather::Weather& weatherData, const weatherprovider::Wea
         {
             log_w("Failed to fetch current weather data");
         }
-        if (retry != retries - 1)
+        if (retry < retries - 1)
         {
             log_i("Will retry in %lu seconds", retryDelaySeconds);
             delay(retryDelaySeconds * 1000);
@@ -132,7 +130,7 @@ uint32_t updateWeather(weather::Weather& weatherData, const weatherprovider::Wea
             log_w("Failed to update weather after %u retries", retries);
         }
     }
-    return (updated) ? sleepTimeSecs : 0;
+    return std::make_pair(updated, sleepTimeSecs);
 }
 
 void draw(const weather::Weather& weatherData)

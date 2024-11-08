@@ -66,7 +66,7 @@ struct DailyWeather
     float gustSpeed = 0.0;
     float windDirection = 0.0;
 
-    // These are in local time.
+    // These are in UTC.
     uint64_t sunrise = 0;
     uint64_t sunset = 0;
     MoonPhase moonPhase = MoonPhase::unknownPhase;
@@ -102,5 +102,9 @@ bool conditionIsWindy(Condition condition, float windSpeed);
 const std::string moonPhaseToString(const MoonPhase moonPhase);
 MoonPhase stringToMoonPhase(const std::string moonPhase);
 
-bool isNightTime(const DailyWeather& dailyWeather);
+// returns true is the current time is before sunrise or after sunset, else false.
+// default values will be used if either sunrise or sunset equals 0.
+// Note: If sunrise and sunset are not the values for the current day then this function
+// will always return false.
+bool isNighttime(const DailyWeather& currentWeather);
 }

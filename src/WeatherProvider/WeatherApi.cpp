@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <map>
 #include <string>
+#include <string_view>
+#include <ctime>
+//#include <iomanip>
 
 #include <ArduinoJson.h>
 #include <esp32-hal-log.h>
@@ -49,39 +52,44 @@ std::string WeatherApi::getCurrentWeatherUrl() const
         .append("&days=1&key=" + mApiKey);
 }
 
-std::string WeatherApi::getForecastedWeatherUrl(const uint8_t days, const uint8_t offset) const
+std::string WeatherApi::getForecastedWeatherUrl(const uint8_t days) const
 {
     auto forecastUrl = std::string(cBaseUrl)
         .append("forecast.json?")
         .append("q=" + std::to_string(mLatitude) + "," + std::to_string(mLongitude))
         .append("&days=" + std::to_string(days))
         .append("&key=" + mApiKey);
-    if (offset > 0)
+    log_d("Getting %d days of forecast starting from today", days);
+    return forecastUrl;
+}
+
+std::string WeatherApi::getForecastedWeatherUrl(const uint8_t days, const time_t atTime) const
+{
+    auto forecastUrl = std::string(cBaseUrl)
+        .append("forecast.json?")
+        .append("q=" + std::to_string(mLatitude) + "," + std::to_string(mLongitude))
+        .append("&days=" + std::to_string(days))
+        .append("&key=" + mApiKey);
+
+    log_d("Getting %d days of forecast starting at time %d", days, atTime);
+    if (days > 1)
     {
-        const uint64_t atTime = time(nullptr) + (cSecondsPerDay * offset);
-        log_d("Getting %d days of forecast starting at time %d", days, atTime);
-        if (days > 1)
-        {
-            log_w("Fetching more than one day of data with a time offset is not allowed on the free tier");
-        }
-        forecastUrl += "&unixdt=" + std::to_string(atTime);
+        log_w("Fetching more than one day of data with a time offset is not allowed on the free tier");
     }
-    else
-    {
-        log_d("Getting %d days of forecast starting from today", days);
-    }
+    forecastUrl += "&unixdt=" + std::to_string(atTime);
     return forecastUrl;
 }
 
 std::string WeatherApi::getHourlyWeatherUrl() const
 {
     // Get two days in case we are close to midnight
-    return getForecastedWeatherUrl(2, 0);
+    return getForecastedWeatherUrl(2);
 }
 
 std::string WeatherApi::getForecastedWeatherUrl() const
 {
-    return getForecastedWeatherUrl(3, 1);
+    const uint64_t atTime = time(nullptr) + (cSecondsPerDay * 1);
+    return getForecastedWeatherUrl(3, atTime);
 }
 
 time_t WeatherApi::toForecastedWeather(
@@ -91,13 +99,14 @@ time_t WeatherApi::toForecastedWeather(
     JsonDocument apiResponse;
     bool totalSuccess = true;
     for (size_t i = 1; i < forecastedWeather.size(); i++) {
-        if (forecastedWeather[i].timestamp >= time(nullptr))
+        if (forecastedWeather[i].timestamp >= timeutils::localTime(forecastedWeather[0].timeZone))
         {
             log_i("Already have forecast for  day %d, skipping update", i);
             continue;
         }
 
-        auto url = getForecastedWeatherUrl(1, i);
+        time_t atTime = timeutils::localTime(forecastedWeather[0].timeZone) + (cSecondsPerDay * i);
+        auto url = getForecastedWeatherUrl(1, atTime);
         log_d("URL returned: %s", url.c_str());
         bool success = connection.getApiResponse(apiResponse, url);
         if (success)
@@ -123,30 +132,49 @@ void WeatherApi::setAstroData(
     dailyWeather.moonPhase = weather::stringToMoonPhase(astroData["moon_phase"].as<std::string>());
 
     std::string sunrise = astroData["sunrise"];
-    log_d("Sunrise: %s", sunrise.c_str());
     if (sunrise.front() == '0')
     {
-        sunrise.erase(sunrise.begin());
-        log_v("Sunrise started with 0, now equals", sunrise.c_str());
+       sunrise.erase(sunrise.begin());
     }
     sunrise = dateTime + " " + sunrise;
-    log_v("Sunrise: %s", sunrise.c_str());
+    log_d("Sunrise: %s", sunrise.c_str());
+    // Due to a bug in the ESP32 strptime implementation, we need to remove " AM" to get AM times
+    sunrise = sunrise.substr(0, sunrise.size() - 3);
+    log_d("Sunrise: %s", sunrise.c_str());
     tm sunriseTime;
-    strptime(sunrise.c_str(), "%F %I:%M %p", &sunriseTime);
+    strptime(sunrise.c_str(), "%Y-%m-%d %I:%M", &sunriseTime);
+    //std::get_time(&sunriseTime, "%Y-%m-%d %I:%M %p");
+    log_d("sunrise tm: %d %d %d %d %d %d %d %d %d ",
+        sunriseTime.tm_year, sunriseTime.tm_mon,
+        sunriseTime.tm_mday, sunriseTime.tm_hour,
+        sunriseTime.tm_min, sunriseTime.tm_sec,
+        sunriseTime.tm_wday, sunriseTime.tm_yday,
+        sunriseTime.tm_isdst);
     dailyWeather.sunrise = mktime(&sunriseTime);
+    dailyWeather.sunrise -= (dailyWeather.timeZone * static_cast<int32_t>(cSecondsPerHour));
+    log_d("sunrise decoded from tm: %s, unixtime: %d", std::asctime(&sunriseTime), dailyWeather.sunrise);
 
     std::string sunset = astroData["sunset"];
-    log_d("Sunset: %s", sunset.c_str());
     if (sunset.front() == '0')
     {
-        sunset.erase(sunset.begin());
-        log_v("Sunset started with 0, now equals", sunset.c_str());
+       sunset.erase(sunset.begin());
     }
     sunset = dateTime + " " + sunset;
-    log_v("Sunset: %s", sunset.c_str());
+    sunset = sunset.substr(0, sunset.size() - 3);
+    log_d("Sunset: %s", sunset.c_str());
     tm sunsetTime;
-    strptime(sunset.c_str(), "%F %I:%M %p", &sunsetTime);
+    strptime(sunset.c_str(), "%Y-%m-%d %I:%M", &sunsetTime);
+    log_d("sunset tm: %d %d %d %d %d %d %d %d %d ",
+        sunsetTime.tm_year, sunsetTime.tm_mon,
+        sunsetTime.tm_mday, sunsetTime.tm_hour,
+        sunsetTime.tm_min, sunsetTime.tm_sec,
+        sunsetTime.tm_wday, sunsetTime.tm_yday,
+        sunsetTime.tm_isdst);
     dailyWeather.sunset = mktime(&sunsetTime);
+    // add 12 hours since we presumably had PM times originally
+    dailyWeather.sunset += cSecondsPerDay / 2;
+    dailyWeather.sunset -= (static_cast<int32_t>(cSecondsPerHour) * dailyWeather.timeZone);
+    log_d("sunset decoded from tm: %s, unixtime: %d", std::asctime(&sunsetTime), dailyWeather.sunset);
 }
 
 void WeatherApi::toCurrentWeather(
@@ -171,10 +199,8 @@ void WeatherApi::toCurrentWeather(
     if (conditionIsWindy(currentWeather.condition, currentWeather.windSpeed)) {
         currentWeather.condition = weather::Condition::windy;
     }
-
     currentWeather.precipitation =  currentApiResponse["current"]["precip_in"];
 
-    currentWeather.timeZone = timeZoneFromApiResponse(currentApiResponse);
     auto dailyData = currentApiResponse["forecast"]["forecastday"][0];
     auto dailyDayData = dailyData["day"];
     currentWeather.tempLow = dailyDayData["mintemp_f"];
@@ -196,8 +222,8 @@ void WeatherApi::toForecastedWeather(
 {
     auto forecastResponse = forecastApiResponse["forecast"]["forecastday"];
     auto dailyData = forecastResponse[index];
-    auto timeZone = timeZoneFromApiResponse(forecastApiResponse);
-    log_d("time zone set to %d", timeZone);
+    dailyWeather.timeZone = timeZoneFromApiResponse(forecastApiResponse);
+    log_d("time zone set to %d", dailyWeather.timeZone);
     dailyWeather.timestamp = dailyData["date_epoch"].as<uint64_t>();
 
     auto dailyDayData = dailyData["day"];

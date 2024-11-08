@@ -8,6 +8,7 @@
 #include <Inkplate.h>
 #include <ArduinoJson.h>
 
+#include "../Fonts/PatrickHand_Regular12pt7b.h"
 #include "../Fonts/PatrickHand_Regular16pt7b.h"
 #include "../Fonts/PatrickHand_Regular21pt7b.h"
 #include "../Fonts/PatrickHand_Regular26pt7b.h"
@@ -34,13 +35,7 @@ void Renderer::update(const weather::Weather& weatherData)
     mDisplay.clearDisplay();
     mDisplay.setTextWrap(false);
 
-    static constexpr size_t currentDrawStartX = 0;
-    static constexpr size_t currentDrawStartY = 0;
-    drawCurrentConditions(
-        weatherData.getDailyWeather(0),
-        currentDrawStartX,
-        currentDrawStartY
-    );
+    drawCurrentConditions(weatherData.getDailyWeather(0), 0, 0);
 
     static constexpr size_t maxDaysToForecast = 3;
     auto daysForecasted = weatherData.getDailyForecastLength() - 1;
@@ -64,7 +59,9 @@ void Renderer::update(const weather::Weather& weatherData)
 
     drawCityName(mDisplay.width() / 2, mDisplay.height() - 40);
 
-    drawBatteryGauge(0, 0);
+    drawBatteryGauge(520, 735);
+
+    drawLastUpdated(5, 750, weatherData.getDailyWeather(0).timeZone);
 }
 
 void Renderer::render() {
@@ -140,7 +137,7 @@ void Renderer::drawHourlyForecast(
 )
 {
     log_i("drawing hourly");
-    // draw horizon line of n pixels long
+    // draw horizon line n pixels in length
     static constexpr size_t lineWeight = 6;
     static constexpr size_t hourlyMarginX = 45;
     static constexpr size_t hourlyMarginY = 35;
@@ -162,7 +159,7 @@ void Renderer::drawHourlyForecast(
     for (size_t i = 0; i < forecast.size(); i++)
     {
         weather::Weather::printHourlyWeather(forecast[i]);
-        if (forecast[i].timestamp > timeutils::localTime(forecast[i].timeZone))
+        if (forecast[i].timestamp > time(nullptr))
         {
             offset = i;
             log_d("Hourly data has an offset of %u", i);
@@ -181,6 +178,7 @@ void Renderer::drawHourlyForecast(
     size_t spacing = hLineW / (hoursToForecast - 1);
     for (size_t i = 0; i < hoursToForecast; i++)
     {
+        // Draw a tick mark for this hour's data on the hourly line
         static constexpr size_t tickHeight = 20;
         auto tickTopLeftX =  (spacing * i) + hLineTopLeftX;
         auto tickTopLeftY = hLineTopLeftY - tickHeight;
@@ -191,6 +189,7 @@ void Renderer::drawHourlyForecast(
             lineWeight, tickHeight,
             BLACK
         );
+
         auto& hourlyForecast = forecast[i + offset];
         auto tickTopCenterX = tickTopLeftX + (lineWeight / 2);
         auto tickTopCenterY = tickTopLeftY;
@@ -218,7 +217,6 @@ void Renderer::drawHourlyForecast(
         mDisplay.println(temp.c_str());
 
         mDisplay.setFont(&PatrickHand_Regular16pt7b);
-        // This time is already in the local timezone.
         std::string time = timeutils::hour12FromEpochTimestamp(
             timeutils::localTime(hourlyForecast.timestamp, hourlyForecast.timeZone)
         );
@@ -295,7 +293,7 @@ void Renderer::drawForecastForDay(
 void Renderer::drawBatteryGauge(size_t x, size_t y)
 {
     auto battery = icon::BatteryGauge(mDisplay);
-    battery.draw(520, 735, icon::Size::s_75x75);
+    battery.draw(x, y, icon::Size::s_75x75);
 }
 
 void Renderer::drawCityName(size_t x, size_t y)
@@ -309,6 +307,29 @@ void Renderer::drawCityName(size_t x, size_t y)
     mDisplay.setCursor(x - (txtW / 2), y + (txtH / 2));
     mDisplay.println(cCity);
 }
+
+void Renderer::drawLastUpdated(size_t x, size_t y, int8_t timeZone)
+{
+    mDisplay.setTextColor(BLACK, WHITE);
+    mDisplay.setFont(&PatrickHand_Regular12pt7b);
+    mDisplay.setTextSize(1);
+
+    auto nowSecs = timeutils::localTime(timeZone);
+    tm timeData;
+    gmtime_r(&nowSecs, &timeData);
+    std::array<char, 16> LastUpdated;
+    strftime(LastUpdated.data(), LastUpdated.size(), "%d %b %I:%M %p ", &timeData);
+
+    uint16_t txtW, txtH;
+    std::tie(txtW, txtH) = getTextDimensions(LastUpdated.data());
+    mDisplay.setCursor(x, y + txtH);
+    mDisplay.println("last updated:");
+    static constexpr size_t textMarginY = 10;
+    mDisplay.setCursor(x, y + (txtH * 2) + textMarginY);
+    log_d("mLastUpdated: %s", LastUpdated.data());
+    mDisplay.println(LastUpdated.data());
+}
+
 
 std::pair<uint16_t, uint16_t> Renderer::getTextDimensions(const std::string& text) const
 {

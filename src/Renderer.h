@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "WeatherTypes.h"
 
@@ -23,9 +24,9 @@ class Inkplate;
     |               |               |
     +---------------+---------------+
     |             hourly            |
-    +------------------------+------+
-    |              city      | batt |
-    +------------------------+------+
+    +--------+---------------+------+
+    | updated|     city      | batt |
+    +--------+---------------+------+
 */
 
 namespace renderer {
@@ -72,6 +73,10 @@ class Renderer {
         // Draws the city name _centered_ at the given point
         // Due to the length being variable, this allows consistent positioning
         void drawCityName(size_t x, size_t y);
+
+        // Draws the last time the display was updated, with the top left corner at
+        // the given point, and with the time in the given timezone.
+        void drawLastUpdated(size_t x, size_t y, int8_t timeZone);
 
         // Gets the width and height of the given string.
         // The dimensions will depend on the currently set font.

@@ -35,7 +35,7 @@ class Icon
 
         // Get the icon name for the conditions, this must be <= 5 chars due to
         // limitations in the library code
-        static const std::string getIconNameForConditions(const weather::DailyWeather& conditions);
+        static const std::string getIconNameForConditions(const weather::DailyWeather& dayData);
 
         // Gets the abbreviation for the moon phase. Due to the above constraint this
         // will be 2 characters.
@@ -48,6 +48,8 @@ class Icon
 
         std::pair<size_t, size_t> getDimensions(Size size) const;
 
+        static bool useNighttimeIcon(const weather::DailyWeather& dayData);
+
         // TODO: This could instead be a list of valid sizes.
         bool mExists;
         std::string mIconName;
@@ -57,6 +59,6 @@ class Icon
         static const std::string cIconsDir;
 };
 
-Icon iconFactory(Inkplate& display, const weather::DailyWeather& conditions);
+Icon iconFactory(Inkplate& display, const weather::DailyWeather& dayData);
 
 }

@@ -62,9 +62,10 @@ class WeatherApi : public WeatherProvider
             weather::hourly_forecast& forecastedWeather,
             const JsonDocument& forecastApiResponse) const override;
 
-        // Get 'days' number of forecasted days, at 'offset' number of days in the future.
-        // offset == 0 for today's forecast.
-        std::string getForecastedWeatherUrl(const uint8_t days, const uint8_t offset) const;
+        // Get 'days' number of forecasted days, at the given timestamp.
+        // To get today's forecast do not provide a timestamp.
+        std::string getForecastedWeatherUrl(const uint8_t days, const  time_t atTime) const;
+        std::string getForecastedWeatherUrl(const uint8_t days) const;
 
         void setAstroData(
             weather::DailyWeather& dailyWeather,

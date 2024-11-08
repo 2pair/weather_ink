@@ -1,5 +1,5 @@
 
-This project uses a Soldered Inkplate 6 as an IoT local weather display.
+This project uses a Soldered Inkplate 6 as an IoT local weather display. The project's goal was to build a self contained weather display that directly consumed the weather API and rendered the content, without relying on an intermediary server.
 
 The API requires using an API key, this can either be specified in a head file or in a JSON file on the SD card. I'm using the header data as a default and the SD data to override so that the config can be modified later without reprogramming the MCU. The `samples` directory includes a JSON file that can be used to specify the environment on the SD card and API samples for Open Weather Map (owm) and Weather API (wa). All of the content of this directory should be put into the SD card root, along with the `icons` directory. The icons are using good ol DOS8.3 naming conventions because the SD card library specified it, though more verbose names may be allowed and would certainly be preferable.
 
