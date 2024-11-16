@@ -10,8 +10,9 @@ constexpr uint32_t cSecondsPerDay = cSecondsPerHour * 24;
 
 namespace timeutils {
 
-// get the current epoch time, with the local timezone offset
+// translate the given epoch time, to the local timezone
 time_t localTime(const time_t epochTime, const int8_t tzOffset);
+// get the current epoch time, with the local timezone offset
 time_t localTime(const int8_t tzOffset);
 
 // Gets the index of the day of the week for a given epoch timestamp.

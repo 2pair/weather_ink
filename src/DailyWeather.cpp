@@ -89,8 +89,15 @@ const std::string weather::moonPhaseToString(const MoonPhase moonPhase)
     }
 }
 
-weather::MoonPhase weather::stringToMoonPhase(const std::string moonPhase)
+weather::MoonPhase weather::parseMoonPhase(const std::string moonPhase, const size_t illuminationPct)
 {
+    // WeatherApi only uses these states on the exact days of these events, be more tolerant
+    if (illuminationPct >= 90) {
+        return MoonPhase::fullMoon;
+    }
+    if (illuminationPct <= 10) {
+        return MoonPhase::newMoon;
+    }
     static const std::unordered_map<std::string, MoonPhase> moonMap = {
         {(const char *)F("New Moon"), MoonPhase::newMoon},
         {(const char *)F("Waxing Crescent"), MoonPhase::waxingCrescent},
@@ -117,9 +124,9 @@ bool weather::isNighttime(const DailyWeather& currentWeather)
     const auto nowTime = timeutils::localTime(currentWeather.timeZone);
     if (sunset != 0 && sunrise != 0)
     {
-        log_d("the time is %d", time(nullptr));
-        log_d("Sunset and sunrise data available. sunrise %llu sunset %llu timestamp %d",
-        sunrise, sunset, nowTime);
+        log_d("Sunset and sunrise data available. sunrise %d sunset %d timestamp %d",
+            sunrise, sunset, nowTime
+        );
         if (
             std::abs(difftime(nowTime, sunset)) > cSecondsPerDay ||
             std::abs(difftime(nowTime, sunrise)) > cSecondsPerDay

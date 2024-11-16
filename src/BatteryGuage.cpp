@@ -11,13 +11,13 @@ BatteryGauge::BatteryGauge(Inkplate& display)
     :   mDisplay(display)
 {}
 
-void BatteryGauge::draw(size_t x, size_t y, Size size)
+void BatteryGauge::draw(size_t x, size_t y, size_t size)
 {
     auto icon = getIcon();
     icon.draw(x, y, size);
 }
 
-void BatteryGauge::drawCentered(size_t x, size_t y, Size size)
+void BatteryGauge::drawCentered(size_t x, size_t y, size_t size)
 {
     auto icon = getIcon();
     icon.drawCentered(x, y, size);

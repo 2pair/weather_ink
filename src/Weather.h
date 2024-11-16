@@ -68,7 +68,7 @@ class Weather
         size_t getHourlyForecastLength() const;
 
         // if updates should be faked
-        inline void fakeUpdates(bool fakeUpdates) { mFakeUpdates = fakeUpdates; }
+        inline void useFakeUpdates(bool fakeUpdates) { mFakeUpdates = fakeUpdates; }
 
     private:
         daily_forecast mForecast;

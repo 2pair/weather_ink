@@ -75,15 +75,14 @@ void Renderer::drawCurrentConditions(
     const size_t y
 )
 {
-    log_i("Drawing current conditions");
+    weather::Weather::printDailyWeather(currentConditions);
     auto weatherIcon = icon::iconFactory(mDisplay, currentConditions);
-    static constexpr size_t iconTopMargin = 95;
-    static constexpr size_t iconHeight = 300;
-    weatherIcon.draw( x, y + iconTopMargin, icon::Size::s_300x300);
+    static constexpr size_t iconTopMargin = 95, iconHeight = 300;
+    weatherIcon.draw(x, y + iconTopMargin, iconHeight);
 
     mDisplay.setTextSize(1);
     mDisplay.setTextColor(BLACK, WHITE);
-
+    // Day name
     mDisplay.setFont(&PatrickHand_Regular41pt7b);
     auto day = timeutils::dayNameFromEpochTimestamp(
         currentConditions.timestamp + (currentConditions.timeZone * cSecondsPerHour)
@@ -95,19 +94,18 @@ void Renderer::drawCurrentConditions(
     uint16_t txtCenterY = y + dayCenterY;
     mDisplay.setCursor(txtCenterX - (txtW / 2), txtCenterY + (txtH / 2));
     mDisplay.println(day.c_str());
-
+    // Current temp
     mDisplay.setFont(&PatrickHand_Regular67pt7b);
     std::string currentTemp =
-        std::to_string(static_cast<uint>(std::round(currentConditions.tempNow))) + "°";
+        std::to_string(static_cast<uint>(std::round(currentConditions.tempNow))); // °
     uint16_t tempW, tempH;
     std::tie(tempW, tempH) = getTextDimensions(currentTemp);
-    static constexpr size_t iconBottomMargin = 50;
-    static constexpr size_t tempMargin = 25;
+    static constexpr size_t iconBottomMargin = 50, tempMargin = 25;
     auto currentTempX =  x + tempMargin;
     auto currentTempY = y + iconHeight + iconTopMargin + iconBottomMargin + tempH;
     mDisplay.setCursor(currentTempX, currentTempY);
     mDisplay.printf("%u%c", static_cast<uint>(currentConditions.tempNow), 0xB0); // °
-
+    // Today's high temp
     mDisplay.setFont(&PatrickHand_Regular31pt7b);
     static constexpr size_t paddingY = 5;
     std::string tempHigh =
@@ -119,7 +117,7 @@ void Renderer::drawCurrentConditions(
     auto tempHighY = currentTempY - tempH + tempHighH - paddingY;
     mDisplay.setCursor(tempHighX, tempHighY);
     mDisplay.printf("%u%c", static_cast<uint>(currentConditions.tempHigh), 0xB0); // °
-
+    // Today's low temp
     std::string tempLow =
         std::to_string(static_cast<uint>(std::round(currentConditions.tempLow)));
     uint16_t tempLowW, tempLowH;
@@ -128,6 +126,45 @@ void Renderer::drawCurrentConditions(
     auto tempLowY = currentTempY + paddingY;
     mDisplay.setCursor(tempLowX, tempLowY);
     mDisplay.printf("%u%c", static_cast<uint>(currentConditions.tempLow), 0xB0); // °
+    // Today's sunrise
+    static constexpr size_t sunTextXMargin = 18, sunTextMarginY = 10;
+    static constexpr int sunIconMarginX = -4, sunIconMarginY = -3;
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+
+    tm timeData;
+    auto sunriseTimestamp = timeutils::localTime(
+        currentConditions.sunrise,
+        currentConditions.timeZone
+    );
+    gmtime_r(&sunriseTimestamp, &timeData);
+    std::array<char, 9> sunrise;
+    strftime(sunrise.data(), sunrise.size(), "%I:%M %p", &timeData);
+    uint16_t sunriseW, sunriseH;
+    std::tie(sunriseW, sunriseH) = getTextDimensions(sunrise.data());
+    auto sunriseIcon = icon::Icon(mDisplay, icon::cSunriseIconName);
+    const size_t sunriseStartY = currentTempY + sunriseH + sunTextMarginY;
+    const size_t sunriseIconSize = sunriseH; //sunriseIcon.getNearestFilePixelSize(sunriseH);
+    sunriseIcon.draw(currentTempX + sunIconMarginX, sunriseStartY + sunIconMarginY, sunriseIconSize);
+    mDisplay.setCursor(currentTempX + sunTextXMargin + sunriseIconSize, sunriseStartY + sunriseH);
+    mDisplay.println(sunrise.data());
+    // Today's sunset
+    auto sunsetTimestamp = timeutils::localTime(
+        currentConditions.sunset,
+        currentConditions.timeZone
+    );
+    gmtime_r(&sunsetTimestamp, &timeData);
+    std::array<char, 9> sunset;
+    strftime(sunset.data(), sunset.size(), "%I:%M %p", &timeData);
+    uint16_t sunsetW, sunsetH;
+    std::tie(sunsetW, sunsetH) = getTextDimensions(sunset.data());
+    auto sunsetIcon = icon::Icon(mDisplay, icon::cSunsetIconName);
+    static constexpr size_t sunsetTextExtraMarginX = 2;
+    const size_t sunsetStartX = currentTempX + ((cCurrentWidth + sunTextXMargin) / 2) + sunsetTextExtraMarginX;
+    const size_t sunsetStartY = sunriseStartY;
+    const size_t sunsetIconSize = sunsetH; //sunsetIcon.getNearestFilePixelSize(sunsetH);
+    sunsetIcon.draw(sunsetStartX + sunIconMarginX, sunsetStartY + sunIconMarginY, sunsetIconSize);
+    mDisplay.setCursor(sunsetStartX + sunTextXMargin + sunsetIconSize, sunsetStartY + sunsetH);
+    mDisplay.println(sunset.data());
 }
 
 void Renderer::drawHourlyForecast(
@@ -243,7 +280,7 @@ void Renderer::drawForecastForDay(
 
     auto weatherIcon = icon::iconFactory(mDisplay, forecast);
     static constexpr size_t iconWidth = 150;
-    weatherIcon.draw( x, y + iconTopMarginY, icon::Size::s_150x150);
+    weatherIcon.draw( x, y + iconTopMarginY, iconWidth);
 
     mDisplay.setTextSize(1);
     mDisplay.setTextColor(BLACK, WHITE);
@@ -293,7 +330,7 @@ void Renderer::drawForecastForDay(
 void Renderer::drawBatteryGauge(size_t x, size_t y)
 {
     auto battery = icon::BatteryGauge(mDisplay);
-    battery.draw(x, y, icon::Size::s_75x75);
+    battery.draw(x, y, 75);
 }
 
 void Renderer::drawCityName(size_t x, size_t y)
@@ -318,7 +355,7 @@ void Renderer::drawLastUpdated(size_t x, size_t y, int8_t timeZone)
     tm timeData;
     gmtime_r(&nowSecs, &timeData);
     std::array<char, 16> LastUpdated;
-    strftime(LastUpdated.data(), LastUpdated.size(), "%d %b %I:%M %p ", &timeData);
+    strftime(LastUpdated.data(), LastUpdated.size(), "%d %b %I:%M %p", &timeData);
 
     uint16_t txtW, txtH;
     std::tie(txtW, txtH) = getTextDimensions(LastUpdated.data());

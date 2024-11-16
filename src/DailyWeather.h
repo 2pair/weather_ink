@@ -43,7 +43,7 @@ enum class MoonPhase
 struct DailyWeather
 {
     // This should be a UTC unix timestamp
-    uint64_t timestamp = 0;
+    time_t timestamp = 0;
 
     // offset from UTC, in hours. Needed per-day due to daylight savings time.
     // This is determined from data retrieved from the weather provider's API.
@@ -67,15 +67,15 @@ struct DailyWeather
     float windDirection = 0.0;
 
     // These are in UTC.
-    uint64_t sunrise = 0;
-    uint64_t sunset = 0;
+    time_t sunrise = 0;
+    time_t sunset = 0;
     MoonPhase moonPhase = MoonPhase::unknownPhase;
 };
 
 struct HourlyWeather
 {
     // This should be a UTC unix timestamp
-    uint64_t timestamp = 0;
+    time_t timestamp = 0;
 
     // offset from UTC, in hours.
     int8_t timeZone = 0;
@@ -100,7 +100,7 @@ constexpr size_t cWindyThreshold = 15; // mph
 bool conditionIsWindy(Condition condition, float windSpeed);
 
 const std::string moonPhaseToString(const MoonPhase moonPhase);
-MoonPhase stringToMoonPhase(const std::string moonPhase);
+MoonPhase parseMoonPhase(const std::string moonPhase, const size_t illuminationPct);
 
 // returns true is the current time is before sunrise or after sunset, else false.
 // default values will be used if either sunrise or sunset equals 0.

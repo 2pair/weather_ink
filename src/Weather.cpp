@@ -89,7 +89,7 @@ const hourly_forecast& Weather::getHourlyWeather() const
 void Weather::printDailyWeather(const DailyWeather& dailyWeather)
 {
     log_i("--------- Daily Weather ---------");
-    log_i("Data for day at timestamp: %llu (tz %d)", dailyWeather.timestamp, dailyWeather.timeZone);
+    log_i("Data for day at timestamp: %d (tz %d)", dailyWeather.timestamp, dailyWeather.timeZone);
 
     log_i(
         "Current Temp:  %.2f (feels like %.2f)",
@@ -97,7 +97,7 @@ void Weather::printDailyWeather(const DailyWeather& dailyWeather)
         dailyWeather.feelsLike
     );
     log_i(
-        "Daily High:  %.2f  Daily Low:  %.2f",
+        "Daily Low:  %.2f  Daily High:  %.2f",
         dailyWeather.tempLow,
         dailyWeather.tempHigh
     );
@@ -124,7 +124,7 @@ void Weather::printDailyWeather(const DailyWeather& dailyWeather)
     );
 
     log_i(
-        "Sunrise: %llu  Sunset:  %llu",
+        "Sunrise: %d  Sunset:  %d",
         dailyWeather.sunrise,
         dailyWeather.sunset
     );
@@ -134,7 +134,7 @@ void Weather::printDailyWeather(const DailyWeather& dailyWeather)
 void Weather::printHourlyWeather(const HourlyWeather& hourlyWeather)
 {
     log_i("--------- Hourly Weather ---------");
-    log_i("Data for hour at: %llu (tz %d)", hourlyWeather.timestamp, hourlyWeather.timeZone);
+    log_i("Data for hour at: %d (tz %d)", hourlyWeather.timestamp, hourlyWeather.timeZone);
 
     log_i(
         "Current Temp:  %.2f (feels like %.2f)",

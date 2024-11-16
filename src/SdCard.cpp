@@ -41,7 +41,6 @@ void SdCard::sleep(Inkplate& display)
 std::string SdCard::findFileWithPrefix(const std::string& dirPath, const std::string& prefix)
 {
     bool success;
-    std::string foundName;
     std::string path;
     if (*dirPath.begin() != '/') {
         path += '/';
@@ -51,30 +50,33 @@ std::string SdCard::findFileWithPrefix(const std::string& dirPath, const std::st
     if (!mFileSystem.exists(path.c_str()))
     {
         log_w("Could not find file. File's path (%s) does not exist", path.c_str());
-        return foundName;
-    }
-    if (!mFileSystem.chdir(path.c_str()))
-    {
-        log_w("Failed to open directory %s", path.c_str());
-        return foundName;
+        return std::string();
     }
 
-    File dir, file;
+
+    File dir;
     success = dir.open(path.c_str(), O_RDONLY);
     if (!success)
     {
-        log_w("Failed to attach fh directory %s", path.c_str());
-        return foundName;
+        log_w("Failed to attach fh to directory %s", path.c_str());
+        return std::string();
     }
-    auto pixelSize = getPathComponents(dirPath).back();
+    return findFileWithPrefix(dir, prefix);
+}
+
+std::string SdCard::findFileWithPrefix(File dir, const std::string& prefix)
+{
+    File file;
+    std::array<char, 16> currentDirName;
+    dir.getName(currentDirName.data(), currentDirName.size());
+    auto pixelSize = currentDirName.data();
     // prefix length + _ + pixels + . + extension + \0 (assumes ext max of 4 char)
-    // getName requires at least 13 bytes.
-    size_t iconNameLength = prefix.size() + 1 + pixelSize.size() + 6;
-    size_t bufLen = std::max(iconNameLength, 13U);
+    size_t iconNameLength = prefix.size() + 1 + currentDirName.size() + 6;
     std::string baseName = prefix + "_" + pixelSize;
+    std::string foundName;
     while(file.openNext(&dir, O_RDONLY))
     {
-        std::string candidateFilename(bufLen, '\0');
+        std::string candidateFilename(iconNameLength, '\0');
         if (
             file.getName(&candidateFilename[0], candidateFilename.size()) &&
             candidateFilename.rfind(prefix, 0) != std::string::npos
@@ -92,18 +94,24 @@ std::string SdCard::findFileWithPrefix(const std::string& dirPath, const std::st
     dir.close();
     if (foundName.empty())
     {
-        log_d("Failed to find file with prefix %s in dir %s", dirPath.c_str(), prefix.c_str());
+        log_d("No file exists with prefix %s in dir %s", prefix.c_str(), currentDirName.data());
     }
     return foundName;
 }
 
-bool SdCard::openFile(const std::string& filePath)
+bool SdCard::fileExists(const std::string& filePath)
 {
     if (!mInitialized)
     {
         log_w("Cannot read file because the SD Card could not be initialized");
         return false;
     }
+    return mFileSystem.exists(filePath.c_str());
+}
+
+
+bool SdCard::openFile(const std::string& filePath)
+{
     if (mFileOpen)
     {
         log_i("Closing open file before opening %s", filePath.c_str());
@@ -114,7 +122,7 @@ bool SdCard::openFile(const std::string& filePath)
     }
 
     log_i("Opening file %s", filePath.c_str());
-    if (!mFileSystem.exists(filePath.c_str()))
+    if (!fileExists(filePath))
     {
         log_w("File does not exist");
         return false;

@@ -133,7 +133,9 @@ void Network::setTimeNTP()
     tm timeData;
     nowSecs = time(nullptr);
     gmtime_r(&nowSecs, &timeData);
-    log_i("Current time UTC: %s", asctime(&timeData));
+    std::array<char, 27>  timeStr;
+    strftime(timeStr.data(), timeStr.size(), "%a %d %b %Y, %T", &timeData);
+    log_i("Current time UTC: %s", timeStr.data());
     if (esp_sntp_enabled())
     {
         log_d("Disabling NTP");

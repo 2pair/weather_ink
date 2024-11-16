@@ -18,9 +18,12 @@ class SdCard
         ~SdCard();
 
         bool openFile(const std::string& filePath);
+        bool fileExists(const std::string& filePath);
 
-        // Returns the file
+        // Check in the given directory for a file named with the given prefix
+        // Returns the name of the file if it's found.
         std::string findFileWithPrefix(const std::string& dirPath, const std::string& prefix);
+        std::string findFileWithPrefix(File dir, const std::string& prefix);
 
         bool readJsonFile(JsonDocument& jsonDocument, const std::string& filePath);
 

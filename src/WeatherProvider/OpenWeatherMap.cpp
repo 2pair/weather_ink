@@ -93,7 +93,7 @@ uint8_t OpenWeatherMap::toForecastedWeather(
 {
     using namespace weather;
 
-    uint64_t lastTime = 0;
+    time_t lastTime = 0;
     auto minDays = std::min(forecastedWeather.size(), forecastApiResponse["cnt"].as<size_t>());
     size_t index = -1;
     bool reorder = false;

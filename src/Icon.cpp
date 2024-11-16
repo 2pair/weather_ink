@@ -12,6 +12,7 @@
 
 using namespace icon;
 
+
 const std::string Icon::cIconsDir = (const char*)F("/icons");
 
 Icon::Icon(Inkplate& display, const std::string&  iconName)
@@ -20,15 +21,40 @@ Icon::Icon(Inkplate& display, const std::string&  iconName)
         mDisplay(display)
 {
     sdcard::SdCard sdCard(mDisplay);
-    auto fileName = sdCard.findFileWithPrefix(
-        std::string(cIconsDir) + (const char*)F("/300"),
-        mIconName
-    );
-    if (fileName.empty())
-    {
-        return;
+
+    // get icon sizes and validate icon exists
+    File srcDir, pixDir;
+    std::string fileName;
+    srcDir.open(cIconsDir.c_str());
+    srcDir.rewindDirectory();
+    while(true) {
+        pixDir = srcDir.openNextFile(O_RDONLY);
+        if (!pixDir)
+        {
+            // No more items in directory
+            break;
+        }
+        if (!pixDir.isDir())
+        {
+            continue;
+        }
+        std::string newFileName = sdCard.findFileWithPrefix(pixDir, mIconName);
+        if (newFileName.empty())
+        {
+            continue;
+        }
+        fileName = newFileName;
+        std::array<char, 16> currentDirName;
+        pixDir.getName(currentDirName.data(), currentDirName.size());
+        mIconSizes.emplace_back(std::stoi(currentDirName.data()));
+        mExists = true;
+        pixDir.close();
     }
-    mExists = true;
+    srcDir.close();
+    if (mIconSizes.empty())
+    {
+        log_d("No icon directory contained an icon with name '%s'", iconName);
+    }
     auto separatorPosition = fileName.find_last_of('.');
     if (separatorPosition != std::string::npos)
     {
@@ -36,32 +62,55 @@ Icon::Icon(Inkplate& display, const std::string&  iconName)
     }
     else
     {
-        log_w("Found file did not have an extension, assuming PNG");
+        log_w("Found file '%s' did not have an extension, assuming PNG", fileName.c_str());
         mExtension = "png";
     }
 }
 
-void Icon::draw(size_t x, size_t y, Size size)
+const size_t Icon::getNearestFilePixelSize(size_t size) const
 {
-    auto iconPath = getPath(size);
-    // Enables SD card device for just this scope
-    sdcard::SdCard sdCard(mDisplay);
-    mDisplay.drawImage(
-        iconPath.c_str(),
-        x,
-        y,
-        true,
-        false
-    );
+    // default to largest icon
+    size_t filePixelSize = mIconSizes.back();
+    for (auto pixelSize : mIconSizes)
+    {
+        if (pixelSize >= size)
+        {
+            filePixelSize = pixelSize;
+            break;
+        }
+    }
+    return filePixelSize;
 }
 
-void Icon::drawCentered(size_t x, size_t y, Size size)
+void Icon::draw(size_t x, size_t y, size_t size)
 {
-    size_t x_top_left, y_top_left;
-    size_t width, height;
-    std::tie(width, height) = getDimensions(size);
-    x_top_left = x - (width / 2);
-    y_top_left = y - (height / 2);
+    auto filePixelSize = Icon::getNearestFilePixelSize(size);
+    auto iconPath = getPath(filePixelSize);
+    // Enables SD card device for just this scope
+    sdcard::SdCard sdCard(mDisplay);
+    if (filePixelSize != size)
+    {
+        log_w(
+            "Icon %s not available with size %d, using %d and re-centering position",
+            mIconName.c_str(), size, filePixelSize
+        );
+        const size_t iconOffset = std::max(static_cast<int>(filePixelSize - size), 0) / 2;
+        x -= iconOffset;
+        y -= iconOffset;
+
+    }
+    if (!sdCard.fileExists(iconPath))
+    {
+        log_e("Could not draw icon at path %s because it does not exist!", iconPath.c_str());
+    }
+    mDisplay.drawImage(iconPath.c_str(), x, y, true, false);
+}
+
+void Icon::drawCentered(size_t x, size_t y, size_t size)
+{
+    size_t width = size, height = size;
+    size_t x_top_left = x - (width / 2);
+    size_t y_top_left = y - (height / 2);
 
     draw(x_top_left, y_top_left, size);
 }
@@ -69,9 +118,8 @@ void Icon::drawCentered(size_t x, size_t y, Size size)
 bool Icon::useNighttimeIcon(const weather::DailyWeather& dayData)
 {
     // Only get nighttime icons if this is todays weather and it's nighttime.
-    const auto nowTime = time(nullptr);
     const auto nowDayIndex = timeutils::dayIndexFromEpochTimestamp(
-        timeutils::localTime(nowTime, dayData.timeZone)
+        timeutils::localTime(dayData.timeZone)
     );
     const auto dayDataDayIndex = timeutils::dayIndexFromEpochTimestamp(
         timeutils::localTime(dayData.timestamp, dayData.timeZone)
@@ -90,7 +138,7 @@ const std::string Icon::getIconNameForConditions(const weather::DailyWeather& da
     const bool getMoonPhase = useNighttimeIcon(dayData);
     if (getMoonPhase)
     {
-        log_d("Getting nighttime icon for weather data with timestamp %llu", dayData.timestamp);
+        log_d("Getting nighttime icon for weather data with timestamp %d", dayData.timestamp);
     }
     switch (dayData.condition)
     {
@@ -104,12 +152,15 @@ const std::string Icon::getIconNameForConditions(const weather::DailyWeather& da
                 return (const char *)F("pcd") + getMoonPhaseAbbreviation(dayData.moonPhase);
             }
             return (const char *)F("pcd");
+        case Condition::drizzle:
+            if (getMoonPhase) {
+                return (const char *)F("dzl") + getMoonPhaseAbbreviation(dayData.moonPhase);
+            }
+            return (const char *)F("dzl");
         case Condition::cloudy:
             return (const char *)F("cd");
         case Condition::foggy:
             return (const char *)F("fog");
-        case Condition::drizzle:
-            return (const char *)F("dzl");
         case Condition::lightRain:
             return (const char *)F("lrn");
         case Condition::rain:
@@ -163,34 +214,10 @@ const std::string Icon::getMoonPhaseAbbreviation(const weather::MoonPhase& moonP
     }
 }
 
-const std::string Icon::getPath(Size size) const
+const std::string Icon::getPath(size_t size) const
 {
-    // TODO
-    size_t width, height;
-    std::tie(width, height) = getDimensions(size);
-    auto size_str = std::to_string(width);
-    return
-        cIconsDir + (const char*)F("/") + size_str + (const char*)F("/") +
-        mIconName  + size_str + (const char*)F(".") + mExtension;
-}
-
-std::pair<size_t, size_t> Icon::getDimensions(Size size) const
-{
-    switch (size)
-    {
-        case Size::s_50x50:
-            return std::make_pair(50, 50);
-        case Size::s_75x75:
-            return std::make_pair(75, 75);
-        case Size::s_100x100:
-            return std::make_pair(100, 100);
-        case Size::s_150x150:
-            return std::make_pair(150, 150);
-        case Size::s_300x300:
-            return std::make_pair(300, 300);
-        default:
-            return std::make_pair(0, 0);
-    }
+    auto size_str = std::to_string(size);
+    return cIconsDir + "/" + size_str + "/" + mIconName  + size_str + "." + mExtension;
 }
 
 bool Icon::exists() const

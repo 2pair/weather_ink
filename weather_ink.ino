@@ -7,6 +7,7 @@
 #include <Inkplate.h>
 #include <ArduinoJson.h>
 #include <esp_attr.h>
+#include <esp_task_wdt.h>
 
 #include "src/Environment.h"
 #include "src/Weather.h"
@@ -20,11 +21,13 @@
 #include "src/WeatherTypes.h"
 
 
+constexpr uint32_t cMinSleepTimeSecs = 15;
+
 Inkplate gDisplay(INKPLATE_3BIT);
 RTC_DATA_ATTR Environment env;
 RTC_DATA_ATTR weather::Weather gWeather(gDisplay);
 
-// Returns how long to wait until the next update, in seconds.IReturns 0 iff the weather could not be updated.
+// Returns how long to wait until the next update, in seconds. Returns 0 if the weather could not be updated.
 std::pair<bool, uint32_t> updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider);
 // Draw the data to the display.
 void draw(const weather::Weather& weatherData);
@@ -39,6 +42,9 @@ void setup()
         delay(10 * 1000);
         esp_restart();
     }
+    // The program should always be able to finish executing in 1 minute, restart if hung
+    esp_task_wdt_init(60, true);
+    enableLoopWDT();
     gDisplay.clearDisplay();
     if (!gDisplay.sdCardInit())
     {
@@ -47,15 +53,14 @@ void setup()
     sdcard::SdCard::sleep(gDisplay);
 
     env = setEnvironmentFromFile("/env.json", gDisplay);
-    gWeather.fakeUpdates(env.fakeApiUpdates);
+    gWeather.useFakeUpdates(env.fakeApiUpdates);
 
     gDisplay.setRotation(1);
-    log_d("last forecast time: %d"), static_cast<uint64_t>(gWeather.getLastForecastTime());
+    log_d("last forecast time: %d", gWeather.getLastForecastTime());
 }
 
 void loop()
 {
-    constexpr uint32_t cMinSleepTimeSecs = 15;
     uint32_t sleepTimeSecs = 0;
     bool weather_updated = false;
     if (std::string(env.provider) == "WeatherApi")
@@ -72,11 +77,6 @@ void loop()
     if (weather_updated)
     {
         draw(gWeather);
-    }
-    else
-    {
-        // weather was not updated. Try again after a little
-        sleepTimeSecs = cMinSleepTimeSecs;
     }
     log_d("Now sleeping for %u seconds (%u minutes)...", sleepTimeSecs, (sleepTimeSecs / 60));
     // pause to finish writing
@@ -103,7 +103,7 @@ std::pair<bool, uint32_t> updateWeather(weather::Weather& weatherData, const wea
     {
         log_d("Connection has not been established, skipping update");
         // Gotta get online!
-        return std::make_pair(updated, 0);
+        return std::make_pair(updated, cMinSleepTimeSecs);
     }
     static constexpr uint8_t retries = 10;
     static constexpr uint16_t retryDelaySeconds = 5;

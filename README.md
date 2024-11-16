@@ -9,8 +9,8 @@ I also made one modification to the Inkplate code, which probably needs to be do
 
 Dependencies:
 ArduinoJson  (v17.0.4)
-StreamUtils (v1.8.0)
 InkplateLibrary (v10.0.0)
+PNGdec (1.0.3)
 c17 and c++17
 
 Tested with VS Code and Arduino-CLI on Windows 11 and MacOS 14

@@ -12,10 +12,10 @@ class BatteryGauge
         BatteryGauge(Inkplate& display);
 
         // Draw the icon with its top left corner at point (x,y) with given size
-        void draw(size_t x, size_t y, Size size);
+        void draw(size_t x, size_t y, size_t size);
 
         // Draw the icon centered at point (x,y) with given size
-        void drawCentered(size_t x, size_t y, Size size);
+        void drawCentered(size_t x, size_t y, size_t size);
 
     private:
         enum class Power
