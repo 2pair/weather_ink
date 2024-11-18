@@ -46,15 +46,20 @@ std::string WeatherApi::getCurrentWeatherUrl() const
     // doesn't let us get more than 3 days at a time, so this needs to be a separate call.
     // We get 1,000,000 calls a month though, so it's fine.
 
-    return std::string(cBaseUrl)
+    std::string currentUrl;
+    currentUrl.reserve(255);
+    currentUrl = std::string(cBaseUrl)
         .append("forecast.json?")
         .append("q=" + std::to_string(mLatitude) + "," + std::to_string(mLongitude))
         .append("&days=1&key=" + mApiKey);
+    return currentUrl;
 }
 
 std::string WeatherApi::getForecastedWeatherUrl(const uint8_t days) const
 {
-    auto forecastUrl = std::string(cBaseUrl)
+    std::string forecastUrl;
+    forecastUrl.reserve(255);
+    forecastUrl = std::string(cBaseUrl)
         .append("forecast.json?")
         .append("q=" + std::to_string(mLatitude) + "," + std::to_string(mLongitude))
         .append("&days=" + std::to_string(days))
@@ -65,7 +70,9 @@ std::string WeatherApi::getForecastedWeatherUrl(const uint8_t days) const
 
 std::string WeatherApi::getForecastedWeatherUrl(const uint8_t days, const time_t atTime) const
 {
-    auto forecastUrl = std::string(cBaseUrl)
+    std::string forecastUrl;
+    forecastUrl.reserve(255);
+    forecastUrl = std::string(cBaseUrl)
         .append("forecast.json?")
         .append("q=" + std::to_string(mLatitude) + "," + std::to_string(mLongitude))
         .append("&days=" + std::to_string(days))
@@ -92,7 +99,7 @@ std::string WeatherApi::getForecastedWeatherUrl() const
     return getForecastedWeatherUrl(3, atTime);
 }
 
-time_t WeatherApi::toForecastedWeather(
+time_t WeatherApi::getForecastedWeather(
     weather::daily_forecast& forecastedWeather,
     network::Network& connection) const
 {
@@ -130,7 +137,8 @@ void WeatherApi::setAstroData(
     const std::string& dateTime) const
 {
     auto moonString = astroData["moon_phase"].as<std::string>();
-    size_t illuminationPct = astroData["illumination_percent"];
+    //default to middle to avoid accidentally overriding phase string if missing data
+    size_t illuminationPct = astroData["moon_illumination"] | 50;
     dailyWeather.moonPhase = weather::parseMoonPhase(moonString, illuminationPct);
 
     // This is local time
@@ -142,14 +150,9 @@ void WeatherApi::setAstroData(
     sunrise = dateTime + " " + sunrise;
     // Due to a bug in the ESP32 strptime implementation, we need to remove " AM" to get AM times
     sunrise = sunrise.substr(0, sunrise.size() - 3);
-    log_d("Sunrise string: %s", sunrise.c_str());
-    tm sunriseTime;
-    strptime(sunrise.c_str(), "%Y-%m-%d %I:%M", &sunriseTime);
-    dailyWeather.sunrise = mktime(&sunriseTime);
+    dailyWeather.sunrise = timeutils::timeStrToEpochTime(sunrise, "%Y-%m-%d %I:%M");
     dailyWeather.sunrise -= (dailyWeather.timeZone * static_cast<int32_t>(cSecondsPerHour));
-    std::array<char, 27>  sunriseTimeStr;
-    strftime(sunriseTimeStr.data(), sunriseTimeStr.size(), "%a %d %b %Y, %T", &sunriseTime);
-    log_d("sunrise decoded from tm: %s, unixtime: %d", sunriseTimeStr.data(), dailyWeather.sunrise);
+    log_d("sunrise time: %s, unixtime: %d", sunrise.c_str(), dailyWeather.sunrise);
 
     // This is local time
     std::string sunset = astroData["sunset"];
@@ -158,14 +161,9 @@ void WeatherApi::setAstroData(
        sunset.erase(sunset.begin());
     }
     sunset = dateTime + " " + sunset;
-    log_d("Sunset string: %s", sunset.c_str());
-    tm sunsetTime;
-    strptime(sunset.c_str(), "%Y-%m-%d %I:%M %p", &sunsetTime);
-    dailyWeather.sunset = mktime(&sunsetTime);
+    dailyWeather.sunset = timeutils::timeStrToEpochTime(sunset, "%Y-%m-%d %I:%M %p");
     dailyWeather.sunset -= (dailyWeather.timeZone * static_cast<int32_t>(cSecondsPerHour));
-    std::array<char, 27>  sunsetTimeStr;
-    strftime(sunsetTimeStr.data(), sunsetTimeStr.size(), "%a %d %b %Y, %T", &sunsetTime);
-    log_d("sunset decoded from tm: %s, unixtime: %d", sunsetTimeStr.data(), dailyWeather.sunset);
+    log_d("sunset time: %s, unixtime: %d", sunset.c_str(), dailyWeather.sunset);
 }
 
 void WeatherApi::toCurrentWeather(
@@ -215,7 +213,11 @@ void WeatherApi::toForecastedWeather(
     auto dailyData = forecastResponse[index];
     dailyWeather.timeZone = timeZoneFromApiResponse(forecastApiResponse);
     log_d("time zone set to %d", dailyWeather.timeZone);
-    dailyWeather.timestamp = dailyData["date_epoch"].as<time_t>();
+    // This is in local tz
+    dailyWeather.timestamp = timeutils::epochTime(
+        dailyData["date_epoch"].as<time_t>(),
+        dailyWeather.timeZone
+    );
 
     auto dailyDayData = dailyData["day"];
     dailyWeather.tempLow = dailyDayData["mintemp_f"];

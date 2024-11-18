@@ -7,7 +7,7 @@
 
 using namespace weatherprovider;
 
-time_t WeatherProvider::toCurrentWeather(
+time_t WeatherProvider::getCurrentWeather(
     weather::DailyWeather& currentWeather,
     network::Network& connection) const
 {
@@ -29,7 +29,7 @@ time_t WeatherProvider::toCurrentWeather(
     return (success) ? time(nullptr) : 0;
 }
 
-time_t WeatherProvider::toCurrentWeather(
+time_t WeatherProvider::getCurrentWeather(
     weather::DailyWeather& currentWeather,
     sdcard::SdCard& sdCard) const
 {
@@ -53,7 +53,7 @@ time_t WeatherProvider::toCurrentWeather(
     return (success) ? time(nullptr) : 0;
 }
 
-time_t WeatherProvider::toForecastedWeather(
+time_t WeatherProvider::getForecastedWeather(
     weather::daily_forecast& forecastedWeather,
     network::Network& connection) const
 {
@@ -75,7 +75,7 @@ time_t WeatherProvider::toForecastedWeather(
     return (success) ? time(nullptr) : 0;
 }
 
-time_t WeatherProvider::toForecastedWeather(
+time_t WeatherProvider::getForecastedWeather(
     weather::daily_forecast& forecastedWeather,
     sdcard::SdCard& sdCard) const
 {
@@ -99,7 +99,7 @@ time_t WeatherProvider::toForecastedWeather(
     return (success) ? time(nullptr) : 0;
 }
 
-time_t WeatherProvider::toHourlyWeather(
+time_t WeatherProvider::getHourlyWeather(
     weather::hourly_forecast& forecastedWeather,
     network::Network& connection) const
 {
@@ -121,7 +121,7 @@ time_t WeatherProvider::toHourlyWeather(
     return (success) ? time(nullptr) : 0;
 }
 
-time_t WeatherProvider::toHourlyWeather(
+time_t WeatherProvider::getHourlyWeather(
     weather::hourly_forecast& forecastedWeather,
     sdcard::SdCard& sdCard) const
 {

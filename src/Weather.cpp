@@ -24,11 +24,11 @@ bool Weather::updateCurrent(network::Network& connection, const weatherprovider:
     if (mFakeUpdates)
     {
         sdcard::SdCard card(mDisplay);
-        updatedTime = provider.toCurrentWeather(mForecast[0], card);
+        updatedTime = provider.getCurrentWeather(mForecast[0], card);
     }
     else
     {
-        updatedTime = provider.toCurrentWeather(mForecast[0], connection);
+        updatedTime = provider.getCurrentWeather(mForecast[0], connection);
     }
     return updatedTime != 0;
 }
@@ -39,11 +39,11 @@ bool Weather::updateHourly(network::Network& connection, const weatherprovider::
     if (mFakeUpdates)
     {
         sdcard::SdCard card(mDisplay);
-        updatedTime = provider.toHourlyWeather(mHourlyForecast, card);
+        updatedTime = provider.getHourlyWeather(mHourlyForecast, card);
     }
     else
     {
-        updatedTime = provider.toHourlyWeather(mHourlyForecast, connection);
+        updatedTime = provider.getHourlyWeather(mHourlyForecast, connection);
     }
     return updatedTime != 0;
 }
@@ -54,11 +54,11 @@ bool Weather::updateForecast(network::Network& connection, const weatherprovider
     if (mFakeUpdates)
     {
         sdcard::SdCard card(mDisplay);
-        updatedTime = provider.toForecastedWeather(mForecast, card);
+        updatedTime = provider.getForecastedWeather(mForecast, card);
     }
     else
     {
-        updatedTime = provider.toForecastedWeather(mForecast, connection);
+        updatedTime = provider.getForecastedWeather(mForecast, connection);
     }
     if (updatedTime)
     {

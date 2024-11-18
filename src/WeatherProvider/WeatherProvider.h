@@ -37,27 +37,27 @@ class WeatherProvider
         /*  overloads of the to*Weather functions are provided to facilitate loading from
             an API or a file.
         */
-        virtual time_t toCurrentWeather(
+        virtual time_t getCurrentWeather(
             weather::DailyWeather& currentWeather,
             network::Network& connection) const;
 
-        virtual time_t toCurrentWeather(
+        virtual time_t getCurrentWeather(
             weather::DailyWeather& currentWeather,
             sdcard::SdCard& sdCard) const;
 
-        virtual time_t toForecastedWeather(
+        virtual time_t getForecastedWeather(
             weather::daily_forecast& forecastedWeather,
             network::Network& connection) const;
 
-        virtual time_t toForecastedWeather(
+        virtual time_t getForecastedWeather(
             weather::daily_forecast& forecastedWeather,
             sdcard::SdCard& sdCard) const;
 
-        virtual time_t toHourlyWeather(
+        virtual time_t getHourlyWeather(
             weather::hourly_forecast& forecastedWeather,
             network::Network& connection) const;
 
-        virtual time_t toHourlyWeather(
+        virtual time_t getHourlyWeather(
             weather::hourly_forecast& forecastedWeather,
             sdcard::SdCard& sdCard) const;
 

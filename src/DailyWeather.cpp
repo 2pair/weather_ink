@@ -93,9 +93,11 @@ weather::MoonPhase weather::parseMoonPhase(const std::string moonPhase, const si
 {
     // WeatherApi only uses these states on the exact days of these events, be more tolerant
     if (illuminationPct >= 90) {
+        log_d("illumination is %d, returning full moon", illuminationPct);
         return MoonPhase::fullMoon;
     }
     if (illuminationPct <= 10) {
+        log_d("illumination is %d, returning new moon", illuminationPct);
         return MoonPhase::newMoon;
     }
     static const std::unordered_map<std::string, MoonPhase> moonMap = {

@@ -16,6 +16,11 @@ static auto thursday = F("Thursday");
 static auto friday = F("Friday");
 static auto saturday = F("Saturday");
 
+time_t timeutils::epochTime(const time_t localTime, const int8_t tzOffset)
+{
+    return localTime - (static_cast<uint32_t>(tzOffset) * cSecondsPerHour);
+}
+
 time_t timeutils::localTime(const time_t epochTime, const int8_t tzOffset)
 {
     return epochTime + (static_cast<uint32_t>(tzOffset) * cSecondsPerHour);
@@ -79,6 +84,9 @@ time_t timeutils::timeStrToEpochTime(const std::string &timeString, const std::s
 {
     tm timeInfo;
     strptime(timeString.c_str(), format.c_str(), &timeInfo);
+    // These values were sometimes filled with garbage, which does bad things to mktime
+    timeInfo.tm_isdst = 0;
+    timeInfo.tm_sec = (timeInfo.tm_sec >= 60 || timeInfo.tm_sec < 0) ? 0 : timeInfo.tm_sec;
     log_v("timestr %s format %s", timeString.c_str(), format.c_str());
     return mktime(&timeInfo);
 }

@@ -103,6 +103,7 @@ void Icon::draw(size_t x, size_t y, size_t size)
     {
         log_e("Could not draw icon at path %s because it does not exist!", iconPath.c_str());
     }
+    log_i("drawing icon %s", iconPath.c_str());
     mDisplay.drawImage(iconPath.c_str(), x, y, true, false);
 }
 

@@ -8,13 +8,13 @@
 #include <Inkplate.h>
 #include <ArduinoJson.h>
 
-#include "../Fonts/PatrickHand_Regular12pt7b.h"
-#include "../Fonts/PatrickHand_Regular16pt7b.h"
-#include "../Fonts/PatrickHand_Regular21pt7b.h"
-#include "../Fonts/PatrickHand_Regular26pt7b.h"
-#include "../Fonts/PatrickHand_Regular31pt7b.h"
-#include "../Fonts/PatrickHand_Regular41pt7b.h"
-#include "../Fonts/PatrickHand_Regular67pt7b.h"
+#include "../fonts/PatrickHand_Regular12pt7b.h"
+#include "../fonts/PatrickHand_Regular16pt7b.h"
+#include "../fonts/PatrickHand_Regular21pt7b.h"
+#include "../fonts/PatrickHand_Regular26pt7b.h"
+#include "../fonts/PatrickHand_Regular31pt7b.h"
+#include "../fonts/PatrickHand_Regular41pt7b.h"
+#include "../fonts/PatrickHand_Regular67pt7b.h"
 
 #include "Icon.h"
 #include "BatteryGuage.h"

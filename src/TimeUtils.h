@@ -10,6 +10,9 @@ constexpr uint32_t cSecondsPerDay = cSecondsPerHour * 24;
 
 namespace timeutils {
 
+// translate the given local time, to the epoch
+time_t epochTime(const time_t localTime, const int8_t tzOffset);
+
 // translate the given epoch time, to the local timezone
 time_t localTime(const time_t epochTime, const int8_t tzOffset);
 // get the current epoch time, with the local timezone offset

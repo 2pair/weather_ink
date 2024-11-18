@@ -32,7 +32,7 @@ class WeatherApi : public WeatherProvider
             data, but also only lets us get a single day of forecast data if given a
             date offset.
         */
-        time_t toForecastedWeather(
+        time_t getForecastedWeather(
             weather::daily_forecast& forecastedWeather,
             network::Network& connection) const override;
 
