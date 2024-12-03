@@ -148,7 +148,7 @@ void Network::handleWiFiEvent(arduino_event_id_t event, arduino_event_info_t eve
     log_d("Wifi event was %d", event);
     // If the connection is going down, potentially on purpose
     bool connectionFailure = false;
-    switch(event)
+    switch (event)
     {
         case ARDUINO_EVENT_WIFI_STA_GOT_IP:
         case ARDUINO_EVENT_WIFI_STA_GOT_IP6:

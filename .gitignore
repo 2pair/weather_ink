@@ -5,6 +5,8 @@ build/**
 .vs
 .vscode
 logs/**
+**/COM*.txt
+**.bak
 
 # Prerequisites
 *.d

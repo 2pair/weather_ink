@@ -170,30 +170,32 @@ void WeatherApi::toCurrentWeather(
     weather::DailyWeather& currentWeather,
     const JsonDocument& currentApiResponse) const
 {
+    typedef std::string _s;
     currentWeather.timestamp = currentApiResponse["current"]["last_updated_epoch"];
     currentWeather.timeZone = timeZoneFromApiResponse(currentApiResponse);
-    currentWeather.tempNow = currentApiResponse["current"]["temp_f"];
-    currentWeather.feelsLike = currentApiResponse["current"]["feelslike_f"];
+    currentWeather.tempNow =  currentApiResponse["current"][(_s("temp_") +=  mMetricUnits ? "c" : "f").c_str()];
+    currentWeather.feelsLike = currentApiResponse["current"][(_s("feelslike_") +=  mMetricUnits ? "c" : "f").c_str()];
 
     currentWeather.humidity = currentApiResponse["current"]["humidity"];
-    currentWeather.pressure = currentApiResponse["current"]["pressure_mb"];
+    currentWeather.pressure = currentApiResponse["current"][(_s("pressure_") +=  mMetricUnits ? "mb" : "in").c_str()];
     currentWeather.visibility = currentApiResponse["current"]["vis_miles"];
 
-    currentWeather.windSpeed = currentApiResponse["current"]["wind_mph"];
-    currentWeather.gustSpeed = currentApiResponse["current"]["gust_mph"];
+    currentWeather.windSpeed = currentApiResponse["current"][(_s("wind_") +=  mMetricUnits ? "kph" : "mph").c_str()];
+    currentWeather.gustSpeed = currentApiResponse["current"][(_s("gust_") +=  mMetricUnits ? "kph" : "mph").c_str()];
     currentWeather.windDirection = currentApiResponse["current"]["wind_degree"];
 
     const uint16_t code =  currentApiResponse["current"]["condition"]["code"];
     currentWeather.condition = codeToConditions(code);
-    if (conditionIsWindy(currentWeather.condition, currentWeather.windSpeed)) {
+    auto windSpeedMph = currentWeather.windSpeed * (mMetricUnits ? 1.6 : 1);
+    if (conditionIsWindy(currentWeather.condition, windSpeedMph)) {
         currentWeather.condition = weather::Condition::windy;
     }
-    currentWeather.precipitation =  currentApiResponse["current"]["precip_in"];
+    currentWeather.precipitation =  currentApiResponse["current"][(_s("precip_") +=  mMetricUnits ? "mm" : "in").c_str()];
 
     auto dailyData = currentApiResponse["forecast"]["forecastday"][0];
     auto dailyDayData = dailyData["day"];
-    currentWeather.tempLow = dailyDayData["mintemp_f"];
-    currentWeather.tempHigh = dailyDayData["maxtemp_f"];
+    currentWeather.tempLow = dailyDayData[(_s("mintemp_") +=  mMetricUnits ? "c" : "f").c_str()];
+    currentWeather.tempHigh = dailyDayData[(_s("maxtemp_") +=  mMetricUnits ? "c" : "f").c_str()];
     currentWeather.chanceOfPrecipitation = std::max(
         dailyDayData["daily_chance_of_rain"].as<float>(),
         dailyDayData["daily_chance_of_snow"].as<float>()
@@ -209,6 +211,7 @@ void WeatherApi::toForecastedWeather(
     const JsonDocument& forecastApiResponse,
     const size_t index) const
 {
+    typedef std::string _s;
     auto forecastResponse = forecastApiResponse["forecast"]["forecastday"];
     auto dailyData = forecastResponse[index];
     dailyWeather.timeZone = timeZoneFromApiResponse(forecastApiResponse);
@@ -220,8 +223,8 @@ void WeatherApi::toForecastedWeather(
     );
 
     auto dailyDayData = dailyData["day"];
-    dailyWeather.tempLow = dailyDayData["mintemp_f"];
-    dailyWeather.tempHigh = dailyDayData["maxtemp_f"];
+    dailyWeather.tempLow = dailyDayData[(_s("mintemp_") +=  mMetricUnits ? "c" : "f").c_str()];
+    dailyWeather.tempHigh = dailyDayData[(_s("maxtemp_") +=  mMetricUnits ? "c" : "f").c_str()];
     dailyWeather.chanceOfPrecipitation = std::max(
         dailyDayData["daily_chance_of_rain"].as<float>(),
         dailyDayData["daily_chance_of_snow"].as<float>()
@@ -230,16 +233,16 @@ void WeatherApi::toForecastedWeather(
 
     uint16_t code = dailyDayData["condition"]["code"];
     dailyWeather.condition = codeToConditions(code);
-    dailyWeather.precipitation = dailyDayData["totalprecip_in"];
-    dailyWeather.precipitation += (dailyDayData["totalsnow_cm"].as<float>() /  2.54);
+    dailyWeather.precipitation = dailyDayData[(_s("totalprecip_") +=  mMetricUnits ? "mm" : "in").c_str()];
+    dailyWeather.precipitation += (dailyDayData["totalsnow_cm"].as<float>() /  (mMetricUnits ? 0.1 : 2.54));
     if (conditionIsWindy(dailyWeather.condition, dailyWeather.windSpeed))
     {
         dailyWeather.condition = weather::Condition::windy;
     }
     //dailyWeather.pressure = ; // not available
     dailyWeather.humidity = dailyDayData["avghumidity"];
-    dailyWeather.visibility = dailyDayData["avgvis_miles"];
-    dailyWeather.windSpeed = dailyDayData["maxwind_mph"];
+    dailyWeather.visibility = dailyDayData[(_s("avgvis_") +=  mMetricUnits ? "km" : "miles").c_str()];
+    dailyWeather.windSpeed = dailyDayData[(_s("maxwind_") +=  mMetricUnits ? "kph" : "mph").c_str()];
     //dailyWeather.gustSpeed = ; // not available
     //dailyWeather.windDirection = ; // not available
     log_i(
@@ -283,6 +286,7 @@ uint8_t WeatherApi::toHourlyWeather(
     weather::hourly_forecast& forecastedWeather,
     const JsonDocument& forecastApiResponse) const
 {
+    typedef std::string _s;
     auto const forecastResponse = forecastApiResponse["forecast"]["forecastday"][0]["hour"];
     auto hoursToGetFirstDay = 0;
      // map of day index to a pair of the hour to start at and how many hours to retrieve
@@ -349,8 +353,8 @@ uint8_t WeatherApi::toHourlyWeather(
             lastDt = hourlyWeather.timestamp;
             hourlyWeather.timeZone = timeZoneFromApiResponse(forecastApiResponse);
 
-            hourlyWeather.temp = hourlyData["temp_f"];
-            hourlyWeather.feelsLike = hourlyData["feelslike_f"];
+            hourlyWeather.temp = hourlyData[(_s("temp_") +=  mMetricUnits ? "c" : "f").c_str()];
+            hourlyWeather.feelsLike = hourlyData[(_s("feelslike_") +=  mMetricUnits ? "c" : "f").c_str()];
             hourlyWeather.chanceOfPrecipitation = std::max(
                 hourlyData["chance_of_rain"].as<float>(),
                 hourlyData["chance_of_snow"].as<float>()
@@ -358,17 +362,17 @@ uint8_t WeatherApi::toHourlyWeather(
 
             uint16_t code = hourlyData["condition"]["code"];
             hourlyWeather.condition = codeToConditions(code);
-            hourlyWeather.precipitation = hourlyData["precip_in"];
-            hourlyWeather.precipitation += hourlyData["snow_cm"].as<float>() /  2.54;
+            hourlyWeather.precipitation = hourlyData[(_s("precip_") +=  mMetricUnits ? "mm" : "in").c_str()];
+            hourlyWeather.precipitation += hourlyData["snow_cm"].as<float>() /  (mMetricUnits ? 0.1 : 2.54);
 
             if (conditionIsWindy(hourlyWeather.condition, hourlyWeather.windSpeed))
             {
                 hourlyWeather.condition = weather::Condition::windy;
             }
-            hourlyWeather.pressure = hourlyData["pressure_mb"];
+            hourlyWeather.pressure = hourlyData[(_s("pressure_") +=  mMetricUnits ? "mb" : "in").c_str()];
             hourlyWeather.humidity = hourlyData["humidity"];
 
-            hourlyWeather.windSpeed = hourlyData["wind_mph"];
+            hourlyWeather.windSpeed = hourlyData[(_s("wind_") +=  mMetricUnits ? "kph" : "mph").c_str()];
             hourlyWeather.windDirection = hourlyData["wind_degree"];
         }
         log_i("JSON successfully converted to hourly forecast weather");
@@ -383,7 +387,7 @@ uint8_t WeatherApi::toHourlyWeather(
  weather::Condition WeatherApi::codeToConditions(const uint16_t code) const
 {
     using namespace weather;
-    switch(code)
+    switch (code)
     {
     case 1007:
         return Condition::lightning;

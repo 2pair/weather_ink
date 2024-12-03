@@ -2,7 +2,7 @@
 #error                                                                                                                 \
     "Wrong board configured. Select e-radionica Inkplate6 or Soldered Inkplate6 in the boards menu."
 #endif
-//921600
+
 #include <Arduino.h>
 #include <Inkplate.h>
 #include <ArduinoJson.h>
@@ -19,6 +19,7 @@
 #include "src/SdCard.h"
 #include "src/Renderer.h"
 #include "src/WeatherTypes.h"
+#include "src/UserConfig.h"
 
 
 constexpr uint32_t cMinSleepTimeSecs = 15;
@@ -34,7 +35,11 @@ void draw(const weather::Weather& weatherData);
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(115200);//921600
+    // Very long initial timeout to safeguard against program hanging at any point
+    esp_task_wdt_init(10 * 60, true);
+    enableLoopWDT();
+
     int result = gDisplay.begin();
     if (!result)
     {
@@ -42,21 +47,30 @@ void setup()
         delay(10 * 1000);
         esp_restart();
     }
-    // The program should always be able to finish executing in 1 minute, restart if hung
-    esp_task_wdt_init(60, true);
-    enableLoopWDT();
     gDisplay.clearDisplay();
+    gDisplay.setRotation(1);
     if (!gDisplay.sdCardInit())
     {
         log_e("SD Card init failure. Icon's will not be available.");
     }
     sdcard::SdCard::sleep(gDisplay);
 
-    env = setEnvironmentFromFile("/env.json", gDisplay);
-    gWeather.useFakeUpdates(env.fakeApiUpdates);
+    userconfig::UserConfig userConfig(gDisplay, GPIO_NUM_36, env);
+    userConfig.getConfigFromUser();
+    size_t locationIndex = 0;
+    if (userConfig.configUpdated())
+    {
+        locationIndex = userConfig.getLocationIndex();
+        env.metricUnits = userConfig.getUseMetric();
+    }
 
-    gDisplay.setRotation(1);
+    // todo: interrupt on gpio
+    env = setEnvironmentFromFile("/env.json", gDisplay, locationIndex);
+    gWeather.useFakeUpdates(env.fakeApiUpdates);
     log_d("last forecast time: %d", gWeather.getLastForecastTime());
+
+    // The weather program should always be able to finish executing in 1 minute, restart if hung
+    esp_task_wdt_init(60, true);
 }
 
 void loop()
@@ -65,12 +79,12 @@ void loop()
     bool weather_updated = false;
     if (std::string(env.provider) == "WeatherApi")
     {
-        weatherprovider::WeatherApi provider(env.latitude, env.longitude, env.city, env.apiKey);
+        weatherprovider::WeatherApi provider(env.latitude, env.longitude, env.city, env.apiKey, env.metricUnits);
         std::tie(weather_updated, sleepTimeSecs) = updateWeather(gWeather, provider);
     }
     else // Only other provider is OpenWeatherMap
     {
-        weatherprovider::OpenWeatherMap provider(env.latitude, env.longitude, env.city, env.apiKey);
+        weatherprovider::OpenWeatherMap provider(env.latitude, env.longitude, env.city, env.apiKey, env.metricUnits);
         std::tie(weather_updated, sleepTimeSecs) = updateWeather(gWeather, provider);
     }
 
@@ -83,8 +97,9 @@ void loop()
     delay(10);
     Serial.end();
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_ON);
-    esp_sleep_enable_timer_wakeup(sleepTimeSecs * 1000000L);
+    esp_sleep_enable_timer_wakeup(sleepTimeSecs * cMicrosecondPerSecond);
     sdcard::SdCard::sleep(gDisplay);
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW);
     esp_deep_sleep_start();
 }
 
@@ -135,7 +150,7 @@ std::pair<bool, uint32_t> updateWeather(weather::Weather& weatherData, const wea
 
 void draw(const weather::Weather& weatherData)
 {
-    renderer::Renderer renderer(gDisplay, env.city);
-    renderer.update(weatherData);
+    renderer::Renderer renderer(gDisplay);
+    renderer.update(weatherData, env.city);
     renderer.render();
 }

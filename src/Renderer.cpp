@@ -3,10 +3,12 @@
 #include <cmath>
 #include <string>
 #include <WString.h>
+#include <numeric>
 
 #include <esp32-hal-log.h>
 #include <Inkplate.h>
 #include <ArduinoJson.h>
+//#include <gfxfont.h>
 
 #include "../fonts/PatrickHand_Regular12pt7b.h"
 #include "../fonts/PatrickHand_Regular16pt7b.h"
@@ -24,15 +26,15 @@
 
 using namespace renderer;
 
-Renderer::Renderer(Inkplate& display, const char* city)
-    :   mDisplay(display),
-        cCity(city)
-{}
+Renderer::Renderer(Inkplate& display)
+    :   mDisplay(display)
+{
+    mDisplay.clearDisplay();
+}
 
-void Renderer::update(const weather::Weather& weatherData)
+void Renderer::update(const weather::Weather& weatherData, const char* city)
 {
     log_i("Updating screen buffer");
-    mDisplay.clearDisplay();
     mDisplay.setTextWrap(false);
 
     drawCurrentConditions(weatherData.getDailyWeather(0), 0, 0);
@@ -57,7 +59,7 @@ void Renderer::update(const weather::Weather& weatherData)
 
     drawHourlyForecast(weatherData.getHourlyWeather(), 0, 600);
 
-    drawCityName(mDisplay.width() / 2, mDisplay.height() - 40);
+    drawCityName(city, mDisplay.width() / 2, mDisplay.height() - 40);
 
     drawBatteryGauge(520, 735);
 
@@ -67,6 +69,43 @@ void Renderer::update(const weather::Weather& weatherData)
 void Renderer::render() {
     log_i("Drawing screen buffer to display");
     mDisplay.display();
+}
+
+void Renderer::drawLinesCentered(
+    const std::vector<std::string>& lines,
+    const GFXfont& font,
+    const size_t lineSpacing
+)
+{
+    log_d("writing text to display");
+    mDisplay.setTextSize(1);
+    mDisplay.setTextColor(BLACK, WHITE);
+    mDisplay.setFont(&font);
+
+    std::vector<uint16_t> widths, heights;
+    widths.reserve(lines.size());
+    heights.reserve(lines.size());
+    for (auto& line : lines)
+    {
+        auto [lineW, lineH] = getTextDimensions(line);
+        widths.emplace_back(lineW);
+        heights.emplace_back(lineH);
+    }
+    auto totalHeight = std::accumulate(heights.begin(), heights.end(), 0)
+        + (lineSpacing * (heights.size() - 1));
+    auto textStartVertical = (mDisplay.height() - totalHeight) / 2;
+    auto displayWidth = mDisplay.width();
+
+    auto lastLineStartVertical = textStartVertical;
+    for (size_t i = 0; i < lines.size(); i++)
+    {
+        auto& line = lines.at(i);
+        auto lineStartHorizontal = (displayWidth - widths.at(i)) / 2;
+        auto lineStartVertical = lastLineStartVertical + heights.at(i) + (lineSpacing);
+        lastLineStartVertical = lineStartVertical;
+        mDisplay.setCursor(lineStartHorizontal, lineStartVertical);
+        mDisplay.print(lines.at(i).c_str());
+    }
 }
 
 void Renderer::drawCurrentConditions(
@@ -85,7 +124,7 @@ void Renderer::drawCurrentConditions(
     // Day name
     mDisplay.setFont(&PatrickHand_Regular41pt7b);
     auto day = timeutils::dayNameFromEpochTimestamp(
-        currentConditions.timestamp + (currentConditions.timeZone * cSecondsPerHour)
+        timeutils::localTime(currentConditions.timestamp, currentConditions.timeZone)
     );
     static constexpr size_t dayCenterY = 30;
     uint16_t txtW, txtH;
@@ -104,7 +143,7 @@ void Renderer::drawCurrentConditions(
     auto currentTempX =  x + tempMargin;
     auto currentTempY = y + iconHeight + iconTopMargin + iconBottomMargin + tempH;
     mDisplay.setCursor(currentTempX, currentTempY);
-    mDisplay.printf("%u%c", static_cast<uint>(currentConditions.tempNow), 0xB0); // °
+    mDisplay.printf("%s", currentTemp.c_str()); // °
     // Today's high temp
     mDisplay.setFont(&PatrickHand_Regular31pt7b);
     static constexpr size_t paddingY = 5;
@@ -116,7 +155,7 @@ void Renderer::drawCurrentConditions(
     auto tempHighX = cCurrentWidth - tempHighW - tempHighLowMarginX;
     auto tempHighY = currentTempY - tempH + tempHighH - paddingY;
     mDisplay.setCursor(tempHighX, tempHighY);
-    mDisplay.printf("%u%c", static_cast<uint>(currentConditions.tempHigh), 0xB0); // °
+    mDisplay.printf("%s", tempHigh.c_str()); // °
     // Today's low temp
     std::string tempLow =
         std::to_string(static_cast<uint>(std::round(currentConditions.tempLow)));
@@ -125,7 +164,7 @@ void Renderer::drawCurrentConditions(
     auto tempLowX = cCurrentWidth - tempLowW - tempHighLowMarginX;
     auto tempLowY = currentTempY + paddingY;
     mDisplay.setCursor(tempLowX, tempLowY);
-    mDisplay.printf("%u%c", static_cast<uint>(currentConditions.tempLow), 0xB0); // °
+    mDisplay.printf("%s", tempLow.c_str()); // °
     // Today's sunrise
     static constexpr size_t sunTextXMargin = 18, sunTextMarginY = 10;
     static constexpr int sunIconMarginX = -4, sunIconMarginY = -3;
@@ -174,7 +213,7 @@ void Renderer::drawHourlyForecast(
 )
 {
     log_i("drawing hourly");
-    // draw horizon line n pixels in length
+    // draw horizontal line n pixels in length
     static constexpr size_t lineWeight = 6;
     static constexpr size_t hourlyMarginX = 45;
     static constexpr size_t hourlyMarginY = 35;
@@ -333,16 +372,16 @@ void Renderer::drawBatteryGauge(size_t x, size_t y)
     battery.draw(x, y, 75);
 }
 
-void Renderer::drawCityName(size_t x, size_t y)
+void Renderer::drawCityName(const char* city, size_t x, size_t y)
 {
     mDisplay.setTextColor(BLACK, WHITE);
     mDisplay.setFont(&PatrickHand_Regular41pt7b);
     mDisplay.setTextSize(1);
 
     uint16_t txtW, txtH;
-    std::tie(txtW, txtH) = getTextDimensions(cCity);
+    std::tie(txtW, txtH) = getTextDimensions(city);
     mDisplay.setCursor(x - (txtW / 2), y + (txtH / 2));
-    mDisplay.println(cCity);
+    mDisplay.println(city);
 }
 
 void Renderer::drawLastUpdated(size_t x, size_t y, int8_t timeZone)

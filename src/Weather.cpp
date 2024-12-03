@@ -16,7 +16,9 @@ using namespace weather;
 Weather::Weather(Inkplate& display)
     :   mDisplay(display),
         mFakeUpdates(false)
-{}
+{
+    // Don't initialize the weather structs to preserve info from previous update
+}
 
 bool Weather::updateCurrent(network::Network& connection, const weatherprovider::WeatherProvider& provider)
 {

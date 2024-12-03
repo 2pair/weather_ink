@@ -12,7 +12,7 @@ using namespace weather;
 
 const std::string  weather::conditionToString(const Condition condition)
 {
-    switch(condition)
+    switch (condition)
     {
         case Condition::clear:
             return (const char *)F("Clear");
@@ -65,7 +65,7 @@ bool weather::conditionIsWindy(Condition condition, float windSpeed)
 
 const std::string weather::moonPhaseToString(const MoonPhase moonPhase)
 {
-    switch(moonPhase)
+    switch (moonPhase)
     {
         case MoonPhase::newMoon:
             return (const char *)F("New Moon");

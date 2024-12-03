@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 
+// this should work but my include paths are not working
+//#include <gfxfont.h>
+#include <Inkplate.h>
 #include "WeatherTypes.h"
 
 
@@ -32,14 +35,27 @@ class Inkplate;
 namespace renderer {
 
 class Renderer {
+    private:
+        // local definition to allow forward declaration
+        //struct GFXfont;
+
     public:
-        Renderer(Inkplate& display, const char* city);
+        Renderer(Inkplate& display);
 
         // Updates the screen buffer
-        void update(const weather::Weather& weatherData);
+        void update(const weather::Weather& weatherData, const char* city);
 
         // Draw the screen buffer's contents to the screen
         void render();
+
+        // Update the screen buffer with the given text lines centered on the screen.
+        // This will first clear the screen buffer.
+        // lineSpacing: Number of pixels between each line
+        void drawLinesCentered(
+            const std::vector<std::string>& lines,
+            const GFXfont& font,
+            const size_t lineSpacing
+        );
 
     private:
         // Draws the current weather conditions in  300 wide by 600 high area
@@ -72,7 +88,7 @@ class Renderer {
 
         // Draws the city name _centered_ at the given point
         // Due to the length being variable, this allows consistent positioning
-        void drawCityName(size_t x, size_t y);
+        void drawCityName(const char* city, size_t x, size_t y);
 
         // Draws the last time the display was updated, with the top left corner at
         // the given point, and with the time in the given timezone.

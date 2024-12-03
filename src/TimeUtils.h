@@ -6,7 +6,7 @@
 
 constexpr uint32_t cSecondsPerHour = 3600U;
 constexpr uint32_t cSecondsPerDay = cSecondsPerHour * 24;
-
+constexpr uint64_t cMicrosecondPerSecond = 1000000UL;
 
 namespace timeutils {
 

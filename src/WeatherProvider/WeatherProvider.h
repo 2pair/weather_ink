@@ -27,11 +27,13 @@ class WeatherProvider
             const float latitude,
             const float longitude,
             const std::string& city,
-            const std::string& apiKey)
+            const std::string& apiKey,
+            const bool metricUnits)
             :   mLatitude(latitude),
                 mLongitude(longitude),
                 mCity(city),
-                mApiKey(apiKey)
+                mApiKey(apiKey),
+                mMetricUnits(metricUnits)
             {}
 
         /*  overloads of the to*Weather functions are provided to facilitate loading from
@@ -94,6 +96,7 @@ class WeatherProvider
         const float mLongitude;
         const std::string mCity;
         const std::string mApiKey;
+        const bool mMetricUnits;
 
         // Directory on filesystem where this providers API samples are stored
         static const std::string cFsDirectory;

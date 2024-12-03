@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include <string>
+
 #include <ArduinoJson.h>
 
 class Inkplate;
@@ -23,7 +26,18 @@ char pass[cPassLength];
 char provider[cProviderLength];
 char apiKey[cApiKeyLength];
 
-bool fakeApiUpdates;
+bool fakeApiUpdates = false;
+
+bool metricUnits = false;
 };
 
-Environment setEnvironmentFromFile(const std::string& filename, Inkplate& display);
+Environment setEnvironmentFromFile(
+    const std::string& filename,
+    Inkplate& display,
+    size_t locationIndex=0
+);
+
+std::vector<std::string> GetLocationsFromFile(
+    const std::string& filename,
+    Inkplate& display
+);

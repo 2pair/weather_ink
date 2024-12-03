@@ -51,7 +51,7 @@ BatteryGauge::Power icon::BatteryGauge::getCharge()
 
 Icon icon::BatteryGauge::getIcon()
 {
-    switch(getCharge())
+    switch (getCharge())
     {
         case BatteryGauge::Power::full:
             return Icon(mDisplay, "b++++");

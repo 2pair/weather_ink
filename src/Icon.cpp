@@ -192,7 +192,7 @@ const std::string Icon::getIconNameForConditions(const weather::DailyWeather& da
 const std::string Icon::getMoonPhaseAbbreviation(const weather::MoonPhase& moonPhase)
 {
     using namespace weather;
-    switch(moonPhase) {
+    switch (moonPhase) {
         case MoonPhase::newMoon:
             return (const char *)F("nm");
         case MoonPhase::waxingCrescent:
