@@ -10,6 +10,9 @@
 class Inkplate;
 class Environment;
 
+
+constexpr uint32_t cInterruptResetCode = 0xFEA28EE5;
+
 namespace userconfig {
 
 /* Implements a state machine to get user configuration options. The machine has two
@@ -50,6 +53,8 @@ class UserConfig
         void stateDisplayUpdating();
         void stateTerminate();
 
+        void populateLocations();
+
         enum class State {
             // begin
             None,
@@ -70,6 +75,7 @@ class UserConfig
         Inkplate& mDisplay;
         const Environment& cEnv;
         std::vector<std::string> mLocations;
+        const gpio_num_t mButtonPin;
 
         /* variables to control state machine */
         State mState;

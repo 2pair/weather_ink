@@ -1,6 +1,7 @@
 #include "UserConfig.h"
 
 #include <driver/gpio.h>
+#include <rom/rtc.h>
 #include <Inkplate.h>
 
 #include "../fonts/PatrickHand_Regular26pt7b.h"
@@ -8,9 +9,11 @@
 #include "Environment.h"
 #include "Renderer.h"
 
+extern uint32_t gInterruptReset;
+
 using namespace userconfig;
 
-void userconfig::buttonAction(void* configClass)
+void IRAM_ATTR userconfig::buttonAction(void* configClass)
 {
     auto userConfig = reinterpret_cast<UserConfig*>(configClass);
     userConfig->mButtonPressed = true;
@@ -24,23 +27,25 @@ UserConfig::UserConfig(
 )
     :   mDisplay(display),
         cEnv(env),
+        mButtonPin(buttonPin),
         mUpdated(false),
         mButtonPressed(false),
         mLocationIndex(0),
         mUseMetric(false),
         mState(State::None),
-        mNextState(State::Initialize)
+        mNextState(State::Initialize),
+        mReferenceTime(0)
 
 {
-    gpio_install_isr_service(ESP_INTR_FLAG_LOWMED);
-    auto fptr = &buttonAction;
-    gpio_isr_handler_add(buttonPin, fptr, this);
+    //gpio_install_isr_service(ESP_INTR_FLAG_LOWMED);
+    //gpio_isr_handler_add(buttonPin, buttonAction, this);
+    attachInterruptArg(buttonPin, buttonAction, this, FALLING);
 }
 
 UserConfig::~UserConfig()
 {
-    log_d("destroy userconfig");
-    gpio_uninstall_isr_service();
+    //gpio_uninstall_isr_service();
+    detachInterrupt(mButtonPin);
 }
 
 bool UserConfig::configUpdated() const
@@ -58,9 +63,25 @@ bool UserConfig::getUseMetric() const
     return mUseMetric;
 }
 
+void UserConfig::populateLocations()
+{
+    mLocations = GetLocationsFromFile("/env.json", mDisplay);
+    auto itr = std::find(mLocations.cbegin(), mLocations.cend(), cEnv.city);
+    if (itr == mLocations.cend())
+    {
+        log_w("Default city not in json list, defaulting index to 0");
+        mLocationIndex = 0;
+    }
+    else
+    {
+        mLocationIndex = std::distance(mLocations.cbegin(), itr);
+        log_d("Found default city at index %d", mLocationIndex);
+    }
+}
+
 void UserConfig::getConfigFromUser()
 {
-    log_d("userconfig state machine start");
+    log_d("Userconfig state machine start");
     while(mState != State::Terminate)
     {
         mState = mNextState;
@@ -103,42 +124,66 @@ void UserConfig::getConfigFromUser()
 void UserConfig::stateInitialize()
 {
     log_d("User Config state machine in state Initialize");
+    auto resetReason = rtc_get_reset_reason(PRO_CPU_NUM);
     auto wakeReason = esp_sleep_get_wakeup_cause();
-    // typical wake cycle
-    if (wakeReason == ESP_SLEEP_WAKEUP_TIMER)
+    log_d("Reset reason is %d, wake reason is %d", resetReason, wakeReason);
+    // device is waking due to button press
+    if (wakeReason == ESP_SLEEP_WAKEUP_EXT0)
     {
-        log_d("woken from timer");
-        mNextState = State::Terminate;
-    }
-    // undefined means the device is booting from an off state instead of a sleep state
-    else if (wakeReason == ESP_SLEEP_WAKEUP_UNDEFINED)
-    {
-        log_d("woken by undefined, assuming first boot");
-        mLocations = GetLocationsFromFile("/env.json", mDisplay);
-        auto itr = std::find(mLocations.cbegin(), mLocations.cend(), cEnv.city);
-        if (itr == mLocations.cend())
-        {
-            log_w("default city not in json list, defaulting index to 0");
-            mLocationIndex = 0;
-        }
-        else
-        {
-            mLocationIndex = std::distance(mLocations.cbegin(), itr);
-            log_d("found default city at index %d", mLocationIndex);
-        }
-
-        mNextState = State::DisplayLocationInstructions;
-    }
-    // device is booting due to button press
-    else if (wakeReason == ESP_SLEEP_WAKEUP_EXT0)
-    {
-        log_d("woken from external interrupt");
+        log_d("Woken from external interrupt");
         mUseMetric = cEnv.metricUnits;
         mNextState = State::DisplayUnitInstructions;
     }
+    // Reset via timer from sleep (typical path)
+    else if (resetReason == ESP_RST_INT_WDT)
+    {
+        // Technically this is also the reset reason when we are woken due to the button, but
+        // we are already checking for that, so the only reason left is the watchdog timeout
+        log_d("Woken by watchdog timer");
+        mNextState = State::Terminate;
+    }
+    else if (resetReason == ESP_RST_DEEPSLEEP)
+    {
+        log_d("Device reset from sleep");
+        // This seems redundant with the watchdog timer reset reason...
+        if (wakeReason == ESP_SLEEP_WAKEUP_TIMER)
+        {
+            log_w("Woken from timer!?!");
+            mNextState = State::Terminate;
+        }
+        else
+        {
+            log_w("Unexpected wake reason %d", wakeReason);
+            mNextState = State::Terminate;
+        }
+    }
+    // Booting from power off
+    else if (resetReason == ESP_RST_POWERON)
+    {
+        log_d("Booting from power off state");
+        populateLocations();
+        mNextState = State::DisplayLocationInstructions;
+    }
+    // booting from button press or watchdog timer expiration
+    else if (resetReason == ESP_RST_SW)
+    {
+        // User pushed button while device was awake
+        if (gInterruptReset == cInterruptResetCode)
+        {
+            log_d("Restarted from external interrupt");
+            mUseMetric = cEnv.metricUnits;
+            mNextState = State::DisplayUnitInstructions;
+        }
+        // Watchdog timer expired
+        else
+        {
+            log_w("Restarted by watchdog reset again?!?");
+            mNextState = State::Terminate;
+        }
+    }
     else
     {
-        log_d("Unexpected wake reason %d", wakeReason);
+        log_w("Unexpected restart reason %d", resetReason);
         mNextState = State::Terminate;
     }
 }
@@ -152,13 +197,9 @@ void UserConfig::stateDisplayLocationInstructions()
         "Current location is",
         mLocations.at(mLocationIndex) + "  (" + std::to_string(mLocationIndex + 1) + "/" + std::to_string(mLocations.size()) + ")"
     };
-    log_d("creating renderer");
     renderer::Renderer renderer(mDisplay);
-    log_d("created renderer, writing lines to frame buffer");
     renderer.drawLinesCentered(lines, PatrickHand_Regular26pt7b, 12);
-    log_d("drawing text to screen");
     renderer.render();
-    log_d("getting the time");
     mReferenceTime = esp_timer_get_time();
     mNextState = State::WaitForLocation;
 }
@@ -171,7 +212,7 @@ void UserConfig::stateWaitForLocation()
     auto currentTime = esp_timer_get_time();
     if (currentTime >= mReferenceTime + cWaitTime)
     {
-        log_d("current time is %d, referenceTime is %d, timeoutTime is %d ", currentTime, mReferenceTime, mReferenceTime + cWaitTime);
+        log_d("Current time is %d, reference time is %d, timeout time is %d ", currentTime, mReferenceTime, mReferenceTime + cWaitTime);
         mNextState = State::DisplayUpdating;
     }
     else if (mButtonPressed)

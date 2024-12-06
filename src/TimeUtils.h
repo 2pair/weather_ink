@@ -4,9 +4,11 @@
 #include <WString.h>
 
 
+constexpr uint32_t cSecondsPerMinute = 60;
 constexpr uint32_t cSecondsPerHour = 3600U;
 constexpr uint32_t cSecondsPerDay = cSecondsPerHour * 24;
 constexpr uint64_t cMicrosecondPerSecond = 1000000UL;
+constexpr uint32_t cMillisecondPerSecond = 1000U;
 
 namespace timeutils {
 

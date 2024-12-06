@@ -86,7 +86,7 @@ time_t timeutils::timeStrToEpochTime(const std::string &timeString, const std::s
     strptime(timeString.c_str(), format.c_str(), &timeInfo);
     // These values were sometimes filled with garbage, which does bad things to mktime
     timeInfo.tm_isdst = 0;
-    timeInfo.tm_sec = (timeInfo.tm_sec >= 60 || timeInfo.tm_sec < 0) ? 0 : timeInfo.tm_sec;
+    timeInfo.tm_sec = (timeInfo.tm_sec >= cSecondsPerMinute || timeInfo.tm_sec < 0) ? 0 : timeInfo.tm_sec;
     log_v("timestr %s format %s", timeString.c_str(), format.c_str());
     return mktime(&timeInfo);
 }

@@ -28,7 +28,7 @@ Network::Network(const std::string& ssid, const std::string& pass)
     mEventId = WiFi.onEvent(handleWiFiEvent);
     auto status = WiFi.begin(ssid.c_str(), pass.c_str());
     connectionActive = true;
-    waitForConnection(60);
+    waitForConnection(cSecondsPerMinute);
     if (isConnected())
     {
         setTimeNTP();
