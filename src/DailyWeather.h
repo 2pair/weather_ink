@@ -40,47 +40,14 @@ enum class MoonPhase
     waningCrescent
 };
 
-struct DailyWeather
-{
+struct TemporalWeather {
     // This should be a UTC unix timestamp
     time_t timestamp = 0;
-
     // offset from UTC, in hours. Needed per-day due to daylight savings time.
     // This is determined from data retrieved from the weather provider's API.
     int8_t timeZone = 0;
 
     float tempNow = 0.0;
-    float feelsLike = 0.0;
-    float tempLow = 0.0;
-    float tempHigh = 0.0;
-
-    Condition condition = Condition::unknownCondition;
-    float precipitation = 0.0;
-    float chanceOfPrecipitation = 0.0;
-
-    float humidity = 0.0;
-    float pressure = 0.0;
-    float visibility = 0.0;
-
-    float windSpeed = 0.0;
-    float gustSpeed = 0.0;
-    float windDirection = 0.0;
-
-    // These are in UTC.
-    time_t sunrise = 0;
-    time_t sunset = 0;
-    MoonPhase moonPhase = MoonPhase::unknownPhase;
-};
-
-struct HourlyWeather
-{
-    // This should be a UTC unix timestamp
-    time_t timestamp = 0;
-
-    // offset from UTC, in hours.
-    int8_t timeZone = 0;
-
-    float temp = 0.0;
     float feelsLike = 0.0;
 
     Condition condition = Condition::unknownCondition;
@@ -92,6 +59,28 @@ struct HourlyWeather
 
     float windSpeed = 0.0;
     float windDirection = 0.0;
+
+    MoonPhase moonPhase = MoonPhase::unknownPhase;
+};
+
+struct DailyWeather : TemporalWeather
+{
+    float tempLow = 0.0;
+    float tempHigh = 0.0;
+
+    float visibility = 0.0;
+
+    float gustSpeed = 0.0;
+
+    // These are in UTC.
+    time_t sunrise = 0;
+    time_t sunset = 0;
+};
+
+struct HourlyWeather : TemporalWeather
+{
+    // If this hour occurs while the sun is up
+    bool daytime = true;
 };
 
 const std::string conditionToString(const Condition condition);

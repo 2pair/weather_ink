@@ -5,6 +5,7 @@
 #include <Arduino.h>
 
 #include "DailyWeather.h"
+#include "TimeUtils.h"
 
 
 class Inkplate;
@@ -36,7 +37,8 @@ class Icon
 
         // Get the icon name for the conditions, this must be <= 5 chars due to
         // limitations in the library code
-        static const std::string getIconNameForConditions(const weather::DailyWeather& dayData);
+        template <class T_weatherData>
+        static const std::string getIconNameForConditions(const T_weatherData& weatherData);
 
         // Gets the abbreviation for the moon phase. Due to the above constraint this
         // will be 2 characters.
@@ -50,19 +52,87 @@ class Icon
 
     private:
         const std::string getPath(size_t size) const;
-        static bool useNighttimeIcon(const weather::DailyWeather& dayData);
+        template <class T_weatherData>
+        static bool useNighttimeIcon(const T_weatherData& weatherData);
 
         bool mExists;
+        // These sizes must be sorted in ascending order
         std::string mIconName;
         Inkplate& mDisplay;
         std::string mExtension;
         std::vector<size_t> mIconSizes;
 
         static const std::string cIconsDir;
-        //static constexpr std::array<size_t, 4> pixelSizes = {25, 50, 150, 300};
 };
 
-Icon iconFactory(Inkplate& display, const weather::DailyWeather& dayData);
 
+template <class T_weatherData>
+const std::string Icon::getIconNameForConditions(const T_weatherData& weatherData)
+{
+    using namespace weather;
+
+    const bool getMoonPhase = useNighttimeIcon(weatherData);
+    if (getMoonPhase)
+    {
+        log_d("Getting nighttime icon for weather data with timestamp %d", weatherData.timestamp);
+    }
+    switch (weatherData.condition)
+    {
+        case Condition::clear:
+            if (getMoonPhase) {
+                return (const char *)F("clr") + getMoonPhaseAbbreviation(weatherData.moonPhase);
+            }
+            return (const char *)F("clr");
+        case Condition::partlyCloudy:
+            if (getMoonPhase) {
+                return (const char *)F("pcd") + getMoonPhaseAbbreviation(weatherData.moonPhase);
+            }
+            return (const char *)F("pcd");
+        case Condition::drizzle:
+            if (getMoonPhase) {
+                return (const char *)F("dzl") + getMoonPhaseAbbreviation(weatherData.moonPhase);
+            }
+            return (const char *)F("dzl");
+        case Condition::cloudy:
+            return (const char *)F("cd");
+        case Condition::foggy:
+            return (const char *)F("fog");
+        case Condition::lightRain:
+            return (const char *)F("lrn");
+        case Condition::rain:
+            return (const char *)F("rn");
+        case Condition::heavyRain:
+            return (const char *)F("hrn");
+        case Condition::lightning:
+            return (const char *)F("lng");
+        case Condition::thunderstorm:
+            return (const char *)F("tst");
+        case Condition::freezingRain:
+            return (const char *)F("frn");
+        case Condition::sleet:
+            return (const char *)F("slt");
+        case Condition::snow:
+            return (const char *)F("sno");
+        case Condition::wintryMix:
+            return (const char *)F("wmx");
+        case Condition::windy:
+            return (const char *)F("wnd");
+        case Condition::unknownCondition:
+        default:
+            log_d("Icon not found");
+            return (const char *)F("undef");
+    }
+}
+
+template <class T_weatherData>
+Icon iconFactory(Inkplate& display, const T_weatherData& weatherData)
+{
+    icon::Icon weatherIcon(display, icon::Icon::getIconNameForConditions(weatherData));
+    if (!weatherIcon.exists())
+    {
+        log_w("Icon %s does not exist",conditionToString(weatherData.condition).c_str());
+    }
+    return weatherIcon;
+}
 
 }

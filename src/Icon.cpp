@@ -55,6 +55,7 @@ Icon::Icon(Inkplate& display, const std::string&  iconName)
     {
         log_d("No icon directory contained an icon with name '%s'", iconName);
     }
+    sort(mIconSizes.begin(), mIconSizes.end());
     auto separatorPosition = fileName.find_last_of('.');
     if (separatorPosition != std::string::npos)
     {
@@ -102,6 +103,7 @@ void Icon::draw(size_t x, size_t y, size_t size)
     if (!sdCard.fileExists(iconPath))
     {
         log_e("Could not draw icon at path %s because it does not exist!", iconPath.c_str());
+        return;
     }
     log_i("drawing icon %s", iconPath.c_str());
     mDisplay.drawImage(iconPath.c_str(), x, y, true, false);
@@ -116,7 +118,8 @@ void Icon::drawCentered(size_t x, size_t y, size_t size)
     draw(x_top_left, y_top_left, size);
 }
 
-bool Icon::useNighttimeIcon(const weather::DailyWeather& dayData)
+template <>
+bool Icon::useNighttimeIcon<weather::DailyWeather>(const weather::DailyWeather& dayData)
 {
     // Only get nighttime icons if this is todays weather and it's nighttime.
     const auto nowDayIndex = timeutils::dayIndexFromEpochTimestamp(
@@ -132,61 +135,10 @@ bool Icon::useNighttimeIcon(const weather::DailyWeather& dayData)
     );
 }
 
-const std::string Icon::getIconNameForConditions(const weather::DailyWeather& dayData)
+template <>
+bool Icon::useNighttimeIcon<weather::HourlyWeather>(const weather::HourlyWeather& hourlyData)
 {
-    using namespace weather;
-
-    const bool getMoonPhase = useNighttimeIcon(dayData);
-    if (getMoonPhase)
-    {
-        log_d("Getting nighttime icon for weather data with timestamp %d", dayData.timestamp);
-    }
-    switch (dayData.condition)
-    {
-        case Condition::clear:
-            if (getMoonPhase) {
-                return (const char *)F("clr") + getMoonPhaseAbbreviation(dayData.moonPhase);
-            }
-            return (const char *)F("clr");
-        case Condition::partlyCloudy:
-            if (getMoonPhase) {
-                return (const char *)F("pcd") + getMoonPhaseAbbreviation(dayData.moonPhase);
-            }
-            return (const char *)F("pcd");
-        case Condition::drizzle:
-            if (getMoonPhase) {
-                return (const char *)F("dzl") + getMoonPhaseAbbreviation(dayData.moonPhase);
-            }
-            return (const char *)F("dzl");
-        case Condition::cloudy:
-            return (const char *)F("cd");
-        case Condition::foggy:
-            return (const char *)F("fog");
-        case Condition::lightRain:
-            return (const char *)F("lrn");
-        case Condition::rain:
-            return (const char *)F("rn");
-        case Condition::heavyRain:
-            return (const char *)F("hrn");
-        case Condition::lightning:
-            return (const char *)F("lng");
-        case Condition::thunderstorm:
-            return (const char *)F("tst");
-        case Condition::freezingRain:
-            return (const char *)F("frn");
-        case Condition::sleet:
-            return (const char *)F("slt");
-        case Condition::snow:
-            return (const char *)F("sno");
-        case Condition::wintryMix:
-            return (const char *)F("wmx");
-        case Condition::windy:
-            return (const char *)F("wnd");
-        case Condition::unknownCondition:
-        default:
-            log_d("Icon not found");
-            return (const char *)F("undef");
-    }
+    return !hourlyData.daytime;
 }
 
 const std::string Icon::getMoonPhaseAbbreviation(const weather::MoonPhase& moonPhase)
@@ -224,14 +176,4 @@ const std::string Icon::getPath(size_t size) const
 bool Icon::exists() const
 {
     return mExists;
-}
-
-icon::Icon icon::iconFactory(Inkplate& display, const weather::DailyWeather& dayData)
-{
-    icon::Icon weatherIcon(display, icon::Icon::getIconNameForConditions(dayData));
-    if (!weatherIcon.exists())
-    {
-        log_w("Icon %s does not exist",conditionToString(dayData.condition).c_str());
-    }
-    return weatherIcon;
 }

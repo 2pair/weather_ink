@@ -13,10 +13,10 @@ static constexpr float cLongitude = 78.910;
 static constexpr char cSsid[] = "";
 static constexpr char cPass[] = "";
 
-// your chosen weather provider:
+// your chosen weather provider
 static constexpr char cProvider[] = "WeatherApi";
 
-// Your api key:
+// Your api key
 // https://openweathermap.org/guide , register and copy the key provided
 static constexpr char cApiKeyOpenWeatherMap[] = "";
 
@@ -25,3 +25,6 @@ static constexpr char cApiKeyWeatherApi[] = "";
 
 // If true, read json files from the SD card instead of querying the API
 static constexpr bool cFakeApiUpdates = true;
+
+// If true use metric units. If false use Imperial units
+static constexpr bool cMetricUnits = false;

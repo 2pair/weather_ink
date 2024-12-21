@@ -7,6 +7,27 @@
 
 using namespace weatherprovider;
 
+WeatherProvider::WeatherProvider(
+    const float latitude,
+    const float longitude,
+    const std::string& city,
+    const std::string& apiKey,
+    const bool metricUnits
+)
+    :   mLatitude(latitude),
+        mLongitude(longitude),
+        mCity(city),
+        mApiKey(apiKey),
+        mMetricUnits(metricUnits)
+{
+    log_d("Getting weather from %f, %f (%s) with %s units",
+        mLatitude,
+        mLongitude,
+        mCity.c_str(),
+        mMetricUnits ? "metric" : "imperial"
+    );
+}
+
 time_t WeatherProvider::getCurrentWeather(
     weather::DailyWeather& currentWeather,
     network::Network& connection) const

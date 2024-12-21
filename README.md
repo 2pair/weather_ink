@@ -11,12 +11,12 @@ Dependencies:
 ArduinoJson  (v17.0.4)
 InkplateLibrary (v10.0.0)
 PNGdec (1.0.3)
-c17 and c++17
+c11 and c++11
 
-Tested with VS Code and Arduino-CLI on Windows 11 and MacOS 14
+Tested with VS Code with Arduino-CLI extension (rip) on Windows 11 and MacOS 14
 
 Font attribution:
 https://fonts.google.com/specimen/Patrick+Hand
-
+Special thanks to the author of gfx font customizer (https://github.com/tchapi/Adafruit-GFX-Font-Customiser), which enabled extending the font files to include degree symbols
 Inkplate library:
 https://github.com/SolderedElectronics/Inkplate-Arduino-library?tab=readme-ov-file

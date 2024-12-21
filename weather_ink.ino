@@ -3,11 +3,13 @@
     "Wrong board configured. Select e-radionica Inkplate6 or Soldered Inkplate6 in the boards menu."
 #endif
 
+#include <esp_attr.h>
+#include <esp_task_wdt.h>
+#include <rom/rtc.h>
+
 #include <Arduino.h>
 #include <Inkplate.h>
 #include <ArduinoJson.h>
-#include <esp_attr.h>
-#include <esp_task_wdt.h>
 
 #include "src/Environment.h"
 #include "src/Weather.h"
@@ -20,14 +22,13 @@
 #include "src/Renderer.h"
 #include "src/WeatherTypes.h"
 #include "src/UserConfig.h"
-#include <rom/rtc.h>
 
 constexpr auto cButtonPin = GPIO_NUM_36;
 constexpr uint32_t cMinSleepTimeSecs = 15;
 
 Inkplate gDisplay(INKPLATE_3BIT);
-RTC_DATA_ATTR Environment env;
-RTC_DATA_ATTR weather::Weather gWeather(gDisplay);
+RTC_NOINIT_ATTR Environment gEnv;
+RTC_NOINIT_ATTR weather::Weather gWeather(gDisplay);
 // Stores if the MCU was restarted by our ISR so that
 // we can differentiate between a manual call to esp_restart and a watchdog timeout
 RTC_NOINIT_ATTR uint32_t gInterruptReset;
@@ -61,14 +62,9 @@ void setup()
     gDisplay.clearDisplay();
     gDisplay.setRotation(1);
 
-    userconfig::UserConfig userConfig(gDisplay, cButtonPin, env);
+    userconfig::UserConfig userConfig(gDisplay, cButtonPin, gEnv);
     userConfig.getConfigFromUser();
-    size_t locationIndex = 0;
-    if (userConfig.configUpdated())
-    {
-        locationIndex = userConfig.getLocationIndex();
-        env.metricUnits = userConfig.getUseMetric();
-    }
+    setEnvironmentFromFile(gEnv, "/env.json", gDisplay, userConfig);
 
     if (!gDisplay.sdCardInit())
     {
@@ -78,8 +74,7 @@ void setup()
 
     gInterruptReset = 0;
     attachInterruptArg(cButtonPin, buttonReset, nullptr, FALLING);
-    env = setEnvironmentFromFile("/env.json", gDisplay, locationIndex);
-    gWeather.useFakeUpdates(env.fakeApiUpdates);
+    gWeather.useFakeUpdates(gEnv.fakeApiUpdates);
     log_d("last forecast time: %d", gWeather.getLastForecastTime());
     // The weather program should always be able to finish executing in this time, restart if hung
     esp_task_wdt_init(2 * cSecondsPerMinute, true);
@@ -89,14 +84,15 @@ void loop()
 {
     uint32_t sleepTimeSecs = 0;
     bool weather_updated = false;
-    if (std::string(env.provider) == "WeatherApi")
+    log_d("Updating weather for %s", gEnv.city);
+    if (std::string(gEnv.provider) == "WeatherApi")
     {
-        weatherprovider::WeatherApi provider(env.latitude, env.longitude, env.city, env.apiKey, env.metricUnits);
+        weatherprovider::WeatherApi provider(gEnv.latitude, gEnv.longitude, gEnv.city, gEnv.apiKey, gEnv.metricUnits);
         std::tie(weather_updated, sleepTimeSecs) = updateWeather(gWeather, provider);
     }
     else // Only other provider is OpenWeatherMap
     {
-        weatherprovider::OpenWeatherMap provider(env.latitude, env.longitude, env.city, env.apiKey, env.metricUnits);
+        weatherprovider::OpenWeatherMap provider(gEnv.latitude, gEnv.longitude, gEnv.city, gEnv.apiKey, gEnv.metricUnits);
         std::tie(weather_updated, sleepTimeSecs) = updateWeather(gWeather, provider);
     }
 
@@ -117,12 +113,12 @@ void loop()
 
 std::pair<bool, uint32_t> updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider)
 {
-    network::Network connection(env.ssid, env.pass);
+    network::Network connection(gEnv.ssid, gEnv.pass);
     // Delay between API calls. 1 minute when reading from SD, minimum 15 minutes otherwise.
     uint32_t sleepTimeSecs =
-        env.fakeApiUpdates ? cSecondsPerMinute : std::max(provider.getWeatherUpdateIntervalSeconds(), 15 * cSecondsPerMinute);
+        gEnv.fakeApiUpdates ? cSecondsPerMinute : std::max(provider.getWeatherUpdateIntervalSeconds(), 15 * cSecondsPerMinute);
     log_d("Using %s API updates, with a query interval of %u seconds",
-        (env.fakeApiUpdates ? (const char *)"mock" : "real"),
+        (gEnv.fakeApiUpdates ? (const char *)"mock" : "real"),
         sleepTimeSecs
     );
     bool updated = false;
@@ -163,7 +159,7 @@ std::pair<bool, uint32_t> updateWeather(weather::Weather& weatherData, const wea
 void draw(const weather::Weather& weatherData)
 {
     renderer::Renderer renderer(gDisplay);
-    renderer.update(weatherData, env.city);
+    renderer.update(weatherData, gEnv.city);
     renderer.render();
 }
 

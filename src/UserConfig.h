@@ -39,7 +39,9 @@ class UserConfig
         void getConfigFromUser();
 
         bool configUpdated() const;
+        bool locationIndexUpdated() const;
         size_t getLocationIndex() const;
+        bool useMetricUpdated() const;
         bool getUseMetric() const;
 
     private:
@@ -85,7 +87,9 @@ class UserConfig
 
         /* variables to store results */
         bool mUpdated;
+        bool mLocationIndexUpdated;
         size_t mLocationIndex;
+        bool mUseMetricUpdated;
         bool mUseMetric; // mMetric or imperial units
 
         static constexpr size_t cWaitTime = 10 * cMicrosecondPerSecond;

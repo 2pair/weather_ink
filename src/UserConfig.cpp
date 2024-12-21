@@ -15,6 +15,12 @@ using namespace userconfig;
 
 void IRAM_ATTR userconfig::buttonAction(void* configClass)
 {
+    esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
+    if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_EXT0)
+    {
+        // woken from timer, not button.
+        return;
+    }
     auto userConfig = reinterpret_cast<UserConfig*>(configClass);
     userConfig->mButtonPressed = true;
     log_d("user pressed the button");
@@ -30,21 +36,20 @@ UserConfig::UserConfig(
         mButtonPin(buttonPin),
         mUpdated(false),
         mButtonPressed(false),
+        mLocationIndexUpdated(false),
         mLocationIndex(0),
+        mUseMetricUpdated(false),
         mUseMetric(false),
         mState(State::None),
         mNextState(State::Initialize),
         mReferenceTime(0)
 
 {
-    //gpio_install_isr_service(ESP_INTR_FLAG_LOWMED);
-    //gpio_isr_handler_add(buttonPin, buttonAction, this);
     attachInterruptArg(buttonPin, buttonAction, this, FALLING);
 }
 
 UserConfig::~UserConfig()
 {
-    //gpio_uninstall_isr_service();
     detachInterrupt(mButtonPin);
 }
 
@@ -53,9 +58,19 @@ bool UserConfig::configUpdated() const
     return mUpdated;
 }
 
+ bool UserConfig::locationIndexUpdated() const
+ {
+    return mLocationIndexUpdated;
+ }
+
 size_t UserConfig::getLocationIndex() const
 {
     return mLocationIndex;
+}
+
+bool UserConfig::useMetricUpdated() const
+{
+    return mUseMetricUpdated;
 }
 
 bool UserConfig::getUseMetric() const
@@ -207,8 +222,10 @@ void UserConfig::stateDisplayLocationInstructions()
 void UserConfig::stateWaitForLocation()
 {
     log_d("User Config state machine in state Wait For Location");
-    // Wait 0.25 seconds
-    delay(250);
+    // Sleep 0.500 seconds
+    esp_sleep_enable_timer_wakeup(500 * cMicrosecondPerMillisecond);
+    esp_sleep_enable_ext0_wakeup(mButtonPin, LOW);
+    esp_light_sleep_start();
     auto currentTime = esp_timer_get_time();
     if (currentTime >= mReferenceTime + cWaitTime)
     {
@@ -235,6 +252,7 @@ void UserConfig::stateSetLocation()
     }
     log_i("Location set to %s", mLocations.at(mLocationIndex).c_str());
     mUpdated = true;
+    mLocationIndexUpdated = true;
     mNextState = State::DisplayLocationInstructions;
 }
 
@@ -257,8 +275,10 @@ void UserConfig::stateDisplayUnitInstructions()
 void UserConfig::stateWaitForUnit()
 {
     log_d("User Config state machine in state Wait For Unit");
-    // Wait 0.25 seconds
-    delay(250);
+    // Sleep 0.500 seconds
+    esp_sleep_enable_timer_wakeup(500 * cMicrosecondPerMillisecond);
+    esp_sleep_enable_ext0_wakeup(mButtonPin, LOW);
+    esp_light_sleep_start();
     if (esp_timer_get_time() >= mReferenceTime + cWaitTime)
     {
         mNextState = State::DisplayUpdating;
@@ -279,6 +299,7 @@ void UserConfig::stateSetUnit()
     mUseMetric = !mUseMetric;
     log_i("Units set to %s", mUseMetric ? "metric" : "imperial");
     mUpdated = true;
+    mUseMetricUpdated = true;
     mNextState = State::DisplayUnitInstructions;
 }
 

@@ -8,7 +8,6 @@
 #include <esp32-hal-log.h>
 #include <Inkplate.h>
 #include <ArduinoJson.h>
-//#include <gfxfont.h>
 
 #include "../fonts/PatrickHand_Regular12pt7b.h"
 #include "../fonts/PatrickHand_Regular16pt7b.h"
@@ -37,8 +36,6 @@ void Renderer::update(const weather::Weather& weatherData, const char* city)
     log_i("Updating screen buffer");
     mDisplay.setTextWrap(false);
 
-    drawCurrentConditions(weatherData.getDailyWeather(0), 0, 0);
-
     static constexpr size_t maxDaysToForecast = 3;
     auto daysForecasted = weatherData.getDailyForecastLength() - 1;
     auto daysToForecast = std::min(maxDaysToForecast, daysForecasted);
@@ -57,6 +54,8 @@ void Renderer::update(const weather::Weather& weatherData, const char* city)
         drawForecastForDay(forecast, 300, y);
     }
 
+    drawCurrentConditions(weatherData.getDailyWeather(0), 0, 0);
+
     drawHourlyForecast(weatherData.getHourlyWeather(), 0, 600);
 
     drawCityName(city, mDisplay.width() / 2, mDisplay.height() - 40);
@@ -68,6 +67,7 @@ void Renderer::update(const weather::Weather& weatherData, const char* city)
 
 void Renderer::render() {
     log_i("Drawing screen buffer to display");
+    mDisplay.preloadScreen();
     mDisplay.display();
 }
 
@@ -136,35 +136,35 @@ void Renderer::drawCurrentConditions(
     // Current temp
     mDisplay.setFont(&PatrickHand_Regular67pt7b);
     std::string currentTemp =
-        std::to_string(static_cast<uint>(std::round(currentConditions.tempNow))); // °
+        std::to_string(static_cast<uint>(std::round(currentConditions.tempNow))) + "°";
     uint16_t tempW, tempH;
     std::tie(tempW, tempH) = getTextDimensions(currentTemp);
     static constexpr size_t iconBottomMargin = 50, tempMargin = 25;
     auto currentTempX =  x + tempMargin;
     auto currentTempY = y + iconHeight + iconTopMargin + iconBottomMargin + tempH;
     mDisplay.setCursor(currentTempX, currentTempY);
-    mDisplay.printf("%s", currentTemp.c_str()); // °
+    mDisplay.println(currentTemp.c_str());
     // Today's high temp
     mDisplay.setFont(&PatrickHand_Regular31pt7b);
     static constexpr size_t paddingY = 5;
     std::string tempHigh =
-        std::to_string(static_cast<uint>(std::round(currentConditions.tempHigh)));
+        std::to_string(static_cast<uint>(std::round(currentConditions.tempHigh))) + "°";
     uint16_t tempHighW, tempHighH;
     std::tie(tempHighW, tempHighH) = getTextDimensions(tempHigh);
     auto tempHighLowMarginX = 20;
     auto tempHighX = cCurrentWidth - tempHighW - tempHighLowMarginX;
     auto tempHighY = currentTempY - tempH + tempHighH - paddingY;
     mDisplay.setCursor(tempHighX, tempHighY);
-    mDisplay.printf("%s", tempHigh.c_str()); // °
+    mDisplay.println(tempHigh.c_str());
     // Today's low temp
     std::string tempLow =
-        std::to_string(static_cast<uint>(std::round(currentConditions.tempLow)));
+        std::to_string(static_cast<uint>(std::round(currentConditions.tempLow))) + "°";
     uint16_t tempLowW, tempLowH;
     std::tie(tempLowW, tempLowH) = getTextDimensions(tempLow);
     auto tempLowX = cCurrentWidth - tempLowW - tempHighLowMarginX;
     auto tempLowY = currentTempY + paddingY;
     mDisplay.setCursor(tempLowX, tempLowY);
-    mDisplay.printf("%s", tempLow.c_str()); // °
+    mDisplay.println(tempLow.c_str());
     // Today's sunrise
     static constexpr size_t sunTextXMargin = 18, sunTextMarginY = 10;
     static constexpr int sunIconMarginX = -4, sunIconMarginY = -3;
@@ -200,7 +200,7 @@ void Renderer::drawCurrentConditions(
     static constexpr size_t sunsetTextExtraMarginX = 2;
     const size_t sunsetStartX = currentTempX + ((cCurrentWidth + sunTextXMargin) / 2) + sunsetTextExtraMarginX;
     const size_t sunsetStartY = sunriseStartY;
-    const size_t sunsetIconSize = sunsetH; //sunsetIcon.getNearestFilePixelSize(sunsetH);
+    const size_t sunsetIconSize = sunsetH;
     sunsetIcon.draw(sunsetStartX + sunIconMarginX, sunsetStartY + sunIconMarginY, sunsetIconSize);
     mDisplay.setCursor(sunsetStartX + sunTextXMargin + sunsetIconSize, sunsetStartY + sunsetH);
     mDisplay.println(sunset.data());
@@ -214,7 +214,7 @@ void Renderer::drawHourlyForecast(
 {
     log_i("drawing hourly");
     // draw horizontal line n pixels in length
-    static constexpr size_t lineWeight = 6;
+    static constexpr size_t lineWeight = 3;
     static constexpr size_t hourlyMarginX = 45;
     static constexpr size_t hourlyMarginY = 35;
     static constexpr size_t maxHoursToForecast = 8;
@@ -247,7 +247,8 @@ void Renderer::drawHourlyForecast(
     {
         log_w("There is not enough data to fully populate the hourly forecast.");
     }
-    auto textMarginH = 10;
+    static constexpr size_t textMarginH = 10;
+    static constexpr size_t textMarginW = 4;
 
     mDisplay.setTextColor(BLACK, WHITE);
     mDisplay.setTextSize(1);
@@ -255,36 +256,46 @@ void Renderer::drawHourlyForecast(
     for (size_t i = 0; i < hoursToForecast; i++)
     {
         // Draw a tick mark for this hour's data on the hourly line
-        static constexpr size_t tickHeight = 20;
+        static constexpr size_t tickHeight = 5;
+        static constexpr size_t tickWeight = 6;
         auto tickTopLeftX =  (spacing * i) + hLineTopLeftX;
         auto tickTopLeftY = hLineTopLeftY - tickHeight;
-        auto tickBottomRightX = tickTopLeftX + lineWeight;
+        auto tickBottomRightX = tickTopLeftX + tickWeight;
         auto tickBottomRightY = hLineTopLeftY;
         mDisplay.fillRect(
             tickTopLeftX, tickTopLeftY,
-            lineWeight, tickHeight,
+            tickWeight, tickHeight,
             BLACK
         );
 
         auto& hourlyForecast = forecast[i + offset];
-        auto tickTopCenterX = tickTopLeftX + (lineWeight / 2);
+        auto tickTopCenterX = tickTopLeftX + (tickWeight / 2);
         auto tickTopCenterY = tickTopLeftY;
-        auto tickBottomCenterX = tickBottomRightX - (lineWeight / 2);
+        auto tickBottomCenterX = tickBottomRightX - (tickWeight / 2);
         auto tickBottomCenterY = tickBottomRightY;
 
-        mDisplay.setFont(&PatrickHand_Regular16pt7b);
+        // Chance of precipitation and icon share a line
+        static constexpr size_t iconWidth = 25, iconHeight = iconWidth;
+        static constexpr size_t iconMarginH = 5;
+        mDisplay.setFont(&PatrickHand_Regular12pt7b);
         std::string chanceRain =
             std::to_string(static_cast<uint>(std::round(hourlyForecast.chanceOfPrecipitation * 100)))  + "%";
         uint16_t chanceRainW, chanceRainH;
         std::tie(chanceRainW, chanceRainH) = getTextDimensions(chanceRain);
-        uint16_t chanceRainX = tickTopCenterX - (chanceRainW / 2);
+        uint16_t combinedWidth = chanceRainW + textMarginH + iconWidth;
+        uint16_t chanceRainX = tickTopCenterX - (combinedWidth / 2) +  textMarginW + iconWidth;
         uint16_t chanceRainY = tickTopCenterY - textMarginH;
         mDisplay.setCursor(chanceRainX, chanceRainY);
         mDisplay.println(chanceRain.c_str());
 
+        auto weatherIcon = icon::iconFactory(mDisplay, hourlyForecast);
+        uint16_t weatherIconX = tickTopCenterX - (combinedWidth / 2);
+        uint16_t weatherIconY = tickTopCenterY - iconMarginH - iconHeight;
+        weatherIcon.draw(weatherIconX, weatherIconY, iconWidth);
+
         mDisplay.setFont(&PatrickHand_Regular21pt7b);
         std::string temp =
-            std::to_string(static_cast<uint>(std::round(hourlyForecast.temp)));
+            std::to_string(static_cast<uint>(std::round(hourlyForecast.tempNow))) + "°";
         uint16_t tempW, tempH;
         std::tie(tempW, tempH) = getTextDimensions(temp);
         uint16_t tempX = tickTopCenterX - (tempW / 2);
@@ -327,33 +338,33 @@ void Renderer::drawForecastForDay(
     static constexpr size_t tempLowToDayMarginY = 15;
 
     std::string tempHigh =
-        std::to_string(static_cast<uint>(std::round(forecast.tempHigh)));
+        std::to_string(static_cast<uint>(std::round(forecast.tempHigh))) + "°";
     uint16_t tempHighW, tempHighH;
     std::tie(tempHighW, tempHighH) = getTextDimensions(tempHigh);
     int16_t tempMarginX = 5;
     auto tempHighX = x + iconWidth + tempMarginX;
     auto tempHighY = y + textTopMarginY + tempHighH;
     mDisplay.setCursor(tempHighX, tempHighY);
-    mDisplay.printf("%u%c", static_cast<uint>(forecast.tempHigh), 0xB0); // °
+    mDisplay.println(tempHigh.c_str());
 
     std::string tempLow =
-        std::to_string(static_cast<uint>(std::round(forecast.tempLow)));
+        std::to_string(static_cast<uint>(std::round(forecast.tempLow))) + "°";
     uint16_t tempLowW, tempLowH;
     std::tie(tempLowW, tempLowH) = getTextDimensions(tempLow);
     auto tempLowX = tempHighX;
     auto tempLowY = y + cForecastHeight - tempLowH - tempLowToDayMarginY;
     mDisplay.setCursor(tempLowX, tempLowY);
-    mDisplay.printf("%u%c", static_cast<uint>(forecast.tempLow), 0xB0); // °
+    mDisplay.println(tempLow.c_str());
 
     mDisplay.setFont(&PatrickHand_Regular26pt7b);
     std::string chanceRain =
         std::to_string(static_cast<uint>(std::round(forecast.chanceOfPrecipitation * 100))) + "%";
     uint16_t chanceRainW, ChanceRainH;
     std::tie(chanceRainW, ChanceRainH) = getTextDimensions(chanceRain);
-    auto chanceRainX = x + cForecastWidth - chanceRainW - textRightMarginX;//iconWidth + chanceRainOffsetX + chanceRainMarginX;
+    auto chanceRainX = x + cForecastWidth - chanceRainW - textRightMarginX;
     auto chanceRainY = y + (cForecastHeight / 2);
     mDisplay.setCursor(chanceRainX, chanceRainY);
-    mDisplay.printf("%s%c", chanceRain.c_str(), 0xB0); // °
+    mDisplay.println(chanceRain.c_str());
 
     static constexpr size_t dayBottomMarginY = 15;
     // This time will be midnight GMT, no need to convert to local timezone
@@ -361,7 +372,7 @@ void Renderer::drawForecastForDay(
     uint16_t txtW, txtH;
     std::tie(txtW, txtH) = getTextDimensions(day);
     uint16_t txtCenterX = x + (cForecastWidth / 2);
-    uint16_t txtCenterY = y + cForecastHeight - (txtH / 2) - dayBottomMarginY;//+ tempLowToDayMarginY;
+    uint16_t txtCenterY = y + cForecastHeight - (txtH / 2) - dayBottomMarginY;
     mDisplay.setCursor(txtCenterX - (txtW / 2), txtCenterY + (txtH / 2));
     mDisplay.println(day.c_str());
 }

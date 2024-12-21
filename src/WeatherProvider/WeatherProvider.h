@@ -28,13 +28,7 @@ class WeatherProvider
             const float longitude,
             const std::string& city,
             const std::string& apiKey,
-            const bool metricUnits)
-            :   mLatitude(latitude),
-                mLongitude(longitude),
-                mCity(city),
-                mApiKey(apiKey),
-                mMetricUnits(metricUnits)
-            {}
+            const bool metricUnits);
 
         /*  overloads of the to*Weather functions are provided to facilitate loading from
             an API or a file.

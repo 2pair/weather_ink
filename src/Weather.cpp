@@ -140,7 +140,7 @@ void Weather::printHourlyWeather(const HourlyWeather& hourlyWeather)
 
     log_i(
         "Current Temp:  %.2f (feels like %.2f)",
-        hourlyWeather.temp,
+        hourlyWeather.tempNow,
         hourlyWeather.feelsLike
     );
 

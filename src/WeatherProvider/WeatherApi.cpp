@@ -173,6 +173,7 @@ void WeatherApi::toCurrentWeather(
     typedef std::string _s;
     currentWeather.timestamp = currentApiResponse["current"]["last_updated_epoch"];
     currentWeather.timeZone = timeZoneFromApiResponse(currentApiResponse);
+    log_d("temp key: %s", (_s("temp_") +=  mMetricUnits ? "c" : "f").c_str());
     currentWeather.tempNow =  currentApiResponse["current"][(_s("temp_") +=  mMetricUnits ? "c" : "f").c_str()];
     currentWeather.feelsLike = currentApiResponse["current"][(_s("feelslike_") +=  mMetricUnits ? "c" : "f").c_str()];
 
@@ -353,7 +354,7 @@ uint8_t WeatherApi::toHourlyWeather(
             lastDt = hourlyWeather.timestamp;
             hourlyWeather.timeZone = timeZoneFromApiResponse(forecastApiResponse);
 
-            hourlyWeather.temp = hourlyData[(_s("temp_") +=  mMetricUnits ? "c" : "f").c_str()];
+            hourlyWeather.tempNow = hourlyData[(_s("temp_") +=  mMetricUnits ? "c" : "f").c_str()];
             hourlyWeather.feelsLike = hourlyData[(_s("feelslike_") +=  mMetricUnits ? "c" : "f").c_str()];
             hourlyWeather.chanceOfPrecipitation = std::max(
                 hourlyData["chance_of_rain"].as<float>(),
@@ -374,6 +375,13 @@ uint8_t WeatherApi::toHourlyWeather(
 
             hourlyWeather.windSpeed = hourlyData[(_s("wind_") +=  mMetricUnits ? "kph" : "mph").c_str()];
             hourlyWeather.windDirection = hourlyData["wind_degree"];
+
+            hourlyWeather.daytime = hourlyData["is_day"];
+            auto const astroData = forecastApiResponse["forecast"]["forecastday"][day]["astro"];
+            auto moonString = astroData["moon_phase"].as<std::string>();
+            //default to middle to avoid accidentally overriding phase string if missing data
+            size_t illuminationPct = astroData["moon_illumination"] | 50;
+            hourlyWeather.moonPhase = weather::parseMoonPhase(moonString, illuminationPct);
         }
         log_i("JSON successfully converted to hourly forecast weather");
         if (reorder)
