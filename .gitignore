@@ -1,12 +1,14 @@
 # local
 *.code-workspace
 build/**
-**/default_env.h
+default_env.h
 .vs
 .vscode
 logs/**
-**/COM*.txt
-**.bak
+COM*.txt
+*.bak
+.DS_Store
+__MACOSX
 
 # Prerequisites
 *.d
