@@ -56,7 +56,8 @@ const uint8_t PatrickHand_Regular8pt7bBitmaps[] PROGMEM = {
   0x27, 0x8C, 0x71, 0x4D, 0xA2, 0xC5, 0x14, 0x5B, 0x28, 0xA3, 0x84, 0x10,
   0x43, 0x08, 0x20, 0xFC, 0x10, 0xC6, 0x31, 0x84, 0x1F, 0x74, 0x66, 0x4C,
   0xC4, 0x64, 0x44, 0x70, 0xFF, 0xFC, 0xC6, 0x44, 0x62, 0x36, 0x44, 0x22,
-  0xC0, 0x73, 0xCE };
+  0xC0, 0x73, 0xCE, 0x79, 0x99, 0xE0, 0x00, 0x00, 0x00
+};
 
 const GFXglyph PatrickHand_Regular8pt7bGlyphs[] PROGMEM = {
   {     0,   1,   1,   4,    0,    0 },   // 0x20 ' '
@@ -153,11 +154,61 @@ const GFXglyph PatrickHand_Regular8pt7bGlyphs[] PROGMEM = {
   {   669,   4,  13,   5,    1,  -11 },   // 0x7B '{'
   {   676,   1,  14,   3,    1,  -12 },   // 0x7C '|'
   {   678,   4,  13,   5,    1,  -11 },   // 0x7D '}'
-  {   685,   8,   2,   8,    0,   -8 } }; // 0x7E '~'
+  {   685,   8,   2,   8,    0,   -8 },   // 0x7E '~'
+  {     0,   0,   0,   0,    0,    0 },   // 0x7F 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x80 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x81 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x82 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x83 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x84 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x85 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x86 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x87 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x88 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x89 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x8A 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x8B 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x8C 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x8D 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x8E 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x8F 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x90 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x91 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x92 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x93 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x94 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x95 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x96 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x97 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x98 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x99 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x9A 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x9B 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x9C 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x9D 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x9E 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0x9F 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0xA0 ' '
+  {     0,   0,   0,   0,    0,    0 },   // 0xA1 '¡'
+  {     0,   0,   0,   0,    0,    0 },   // 0xA2 '¢'
+  {     0,   0,   0,   0,    0,    0 },   // 0xA3 '£'
+  {     0,   0,   0,   0,    0,    0 },   // 0xA4 '¤'
+  {     0,   0,   0,   0,    0,    0 },   // 0xA5 '¥'
+  {     0,   0,   0,   0,    0,    0 },   // 0xA6 '¦'
+  {     0,   0,   0,   0,    0,    0 },   // 0xA7 '§'
+  {     0,   0,   0,   0,    0,    0 },   // 0xA8 '¨'
+  {     0,   0,   0,   0,    0,    0 },   // 0xA9 '©'
+  {     0,   0,   0,   0,    0,    0 },   // 0xAA 'ª'
+  {     0,   0,   0,   0,    0,    0 },   // 0xAB '«'
+  {     0,   0,   0,   0,    0,    0 },   // 0xAC '¬'
+  {     0,   0,   0,   0,    0,    0 },   // 0xAD 'non-printable'
+  {     0,   0,   0,   0,    0,    0 },   // 0xAE '®'
+  {     0,   0,   0,   0,    0,    0 },   // 0xAF '¯'
+  {   687,   4,  11,   6,    1,  -10 }    // 0xB0 '°'
+};
 
 const GFXfont PatrickHand_Regular8pt7b PROGMEM = {
   (uint8_t  *)PatrickHand_Regular8pt7bBitmaps,
-  (GFXglyph *)PatrickHand_Regular8pt7bGlyphs,
-  0x20, 0x7E, 21 };
+  (GFXglyph *)PatrickHand_Regular8pt7bGlyphs, 0x20, 0xB0,  21 };
 
 // Approx. 1359 bytes
