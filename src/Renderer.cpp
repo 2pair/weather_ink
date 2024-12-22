@@ -136,7 +136,7 @@ void Renderer::drawCurrentConditions(
     // Current temp
     mDisplay.setFont(&PatrickHand_Regular67pt7b);
     std::string currentTemp =
-        std::to_string(static_cast<uint>(std::round(currentConditions.tempNow))) + "°";
+        std::to_string(static_cast<int>(std::round(currentConditions.tempNow))) + "°";
     uint16_t tempW, tempH;
     std::tie(tempW, tempH) = getTextDimensions(currentTemp);
     static constexpr size_t iconBottomMargin = 50, tempMargin = 25;
@@ -148,7 +148,7 @@ void Renderer::drawCurrentConditions(
     mDisplay.setFont(&PatrickHand_Regular31pt7b);
     static constexpr size_t paddingY = 5;
     std::string tempHigh =
-        std::to_string(static_cast<uint>(std::round(currentConditions.tempHigh))) + "°";
+        std::to_string(static_cast<int>(std::round(currentConditions.tempHigh))) + "°";
     uint16_t tempHighW, tempHighH;
     std::tie(tempHighW, tempHighH) = getTextDimensions(tempHigh);
     auto tempHighLowMarginX = 20;
@@ -158,7 +158,7 @@ void Renderer::drawCurrentConditions(
     mDisplay.println(tempHigh.c_str());
     // Today's low temp
     std::string tempLow =
-        std::to_string(static_cast<uint>(std::round(currentConditions.tempLow))) + "°";
+        std::to_string(static_cast<int>(std::round(currentConditions.tempLow))) + "°";
     uint16_t tempLowW, tempLowH;
     std::tie(tempLowW, tempLowH) = getTextDimensions(tempLow);
     auto tempLowX = cCurrentWidth - tempLowW - tempHighLowMarginX;
@@ -295,7 +295,7 @@ void Renderer::drawHourlyForecast(
 
         mDisplay.setFont(&PatrickHand_Regular21pt7b);
         std::string temp =
-            std::to_string(static_cast<uint>(std::round(hourlyForecast.tempNow))) + "°";
+            std::to_string(static_cast<int>(std::round(hourlyForecast.tempNow))) + "°";
         uint16_t tempW, tempH;
         std::tie(tempW, tempH) = getTextDimensions(temp);
         uint16_t tempX = tickTopCenterX - (tempW / 2);
@@ -338,7 +338,7 @@ void Renderer::drawForecastForDay(
     static constexpr size_t tempLowToDayMarginY = 15;
 
     std::string tempHigh =
-        std::to_string(static_cast<uint>(std::round(forecast.tempHigh))) + "°";
+        std::to_string(static_cast<int>(std::round(forecast.tempHigh))) + "°";
     uint16_t tempHighW, tempHighH;
     std::tie(tempHighW, tempHighH) = getTextDimensions(tempHigh);
     int16_t tempMarginX = 5;
@@ -348,7 +348,7 @@ void Renderer::drawForecastForDay(
     mDisplay.println(tempHigh.c_str());
 
     std::string tempLow =
-        std::to_string(static_cast<uint>(std::round(forecast.tempLow))) + "°";
+        std::to_string(static_cast<int>(std::round(forecast.tempLow))) + "°";
     uint16_t tempLowW, tempLowH;
     std::tie(tempLowW, tempLowH) = getTextDimensions(tempLow);
     auto tempLowX = tempHighX;
