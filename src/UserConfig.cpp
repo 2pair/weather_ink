@@ -81,7 +81,7 @@ bool UserConfig::getUseMetric() const
 void UserConfig::populateLocations()
 {
     mLocations = GetLocationsFromFile("/env.json", mDisplay);
-    auto itr = std::find(mLocations.cbegin(), mLocations.cend(), cEnv.city);
+    auto itr = std::find(mLocations.cbegin(), mLocations.cend(), std::string(cEnv.city));
     if (itr == mLocations.cend())
     {
         log_w("Default city not in json list, defaulting index to 0");
@@ -92,6 +92,7 @@ void UserConfig::populateLocations()
         mLocationIndex = std::distance(mLocations.cbegin(), itr);
         log_d("Found default city at index %d", mLocationIndex);
     }
+    log_d("%d locations available", mLocations.size());
 }
 
 void UserConfig::getConfigFromUser()

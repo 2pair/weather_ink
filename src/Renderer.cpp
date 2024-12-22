@@ -247,7 +247,7 @@ void Renderer::drawHourlyForecast(
     {
         log_w("There is not enough data to fully populate the hourly forecast.");
     }
-    static constexpr size_t textMarginH = 10;
+    static constexpr size_t textMarginH = 15;
     static constexpr size_t textMarginW = 4;
 
     mDisplay.setTextColor(BLACK, WHITE);
@@ -275,7 +275,7 @@ void Renderer::drawHourlyForecast(
         auto tickBottomCenterY = tickBottomRightY;
 
         // Chance of precipitation and icon share a line
-        static constexpr size_t iconWidth = 25, iconHeight = iconWidth;
+        static constexpr size_t iconWidth = 35, iconHeight = iconWidth;
         static constexpr size_t iconMarginH = 5;
         mDisplay.setFont(&PatrickHand_Regular12pt7b);
         std::string chanceRain =

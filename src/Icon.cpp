@@ -170,7 +170,7 @@ const std::string Icon::getMoonPhaseAbbreviation(const weather::MoonPhase& moonP
 const std::string Icon::getPath(size_t size) const
 {
     auto size_str = std::to_string(size);
-    return cIconsDir + "/" + size_str + "/" + mIconName  + size_str + "." + mExtension;
+    return cIconsDir + "/" + size_str + "/" + mIconName + "." + mExtension;
 }
 
 bool Icon::exists() const

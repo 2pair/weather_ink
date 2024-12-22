@@ -138,17 +138,18 @@ std::vector<std::string> GetLocationsFromFile(
 )
 {
     std::vector<std::string> locations;
-    JsonDocument envFile;
     sdcard::SdCard sdCard(display);
     if (sdCard.openFile(filename))
     {
+        JsonDocument envFile;
         sdCard.readJsonFile(envFile, filename);
 
-        std::string city;
-        const JsonArray& locations = envFile["locations"];
-        for (auto location : locations)
+        const JsonArray& jsonLocations = envFile["locations"];
+        log_d("locations list has %d items", locations.size());
+        for (size_t i=0; i<jsonLocations.size(); i++)
         {
-            locations.add(location["name"]);
+            const std::string city = jsonLocations[i]["city"];
+            locations.emplace_back(city);
         }
     }
     if (locations.empty())
