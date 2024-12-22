@@ -16,6 +16,7 @@
 
 void setDefaultEnvironment(Environment& env)
 {
+    log_d("Setting default environment.");
     strlcpy(env.city, cCity, cCityLength);
     env.latitude = cLatitude;
     env.longitude = cLongitude;
@@ -43,16 +44,32 @@ void setEnvironmentFromFile(
     Inkplate& display,
     const userconfig::UserConfig& userConfig)
 {
+    // Exclude the CRC when calculating the CRC
+    auto envAddr = reinterpret_cast<uint8_t*>(&env);
+    uint32_t calculatedCrc = crc32_le(0, envAddr, sizeof(env) - sizeof(env.crc));
+    log_d("Calculated environment CRC as %x", calculatedCrc);
+
+    bool envIsInvalid = (env.crc == 0 || calculatedCrc != env.crc);
+    if (envIsInvalid)
+    {
+        // Generally this will happen on first boot
+        log_d("environment was invalid. Actual CRC was %x", env.crc);
+        setDefaultEnvironment(env);
+        env.crc = crc32_le(0, envAddr, sizeof(env) - sizeof(env.crc));
+    }
+    else{
+        log_d("CRCs matched, environment is valid");
+    }
+
     JsonDocument envFile;
     sdcard::SdCard sdCard(display);
-    if (!sdCard.openFile(filename))
+    if (!sdCard.readJsonFile(envFile, filename))
     {
         log_d("Could not read from SD card, cannot update environment");
         return;
     }
 
-    sdCard.readJsonFile(envFile, filename);
-
+    log_d("Network and API configuration will be re-read from SD");
     // Always re-read these critical elements
     std::string ssid = envFile["ssid"] | cSsid;
     strlcpy(env.ssid, ssid.c_str(), cSsidLength);
@@ -77,56 +94,40 @@ void setEnvironmentFromFile(
         log_w("Unknown provider: %s", env.provider);
     }
 
-    // Exclude the CRC when calculating the CRC
-    auto envAddr = reinterpret_cast<uint8_t*>(&env);
-    uint32_t calculatedCrc = crc32_le(0, envAddr, sizeof(env) - sizeof(env.crc));
-    log_d("Calculated environment CRC as %x", calculatedCrc);
-
-    bool envIsInvalid = (env.crc == 0 || calculatedCrc != env.crc);
-    if (envIsInvalid)
+    if (!userConfig.configUpdated())
     {
-        // Generally this will happen on first boot or if user edits the json file
-        log_d("environment has changed. Actual CRC was %x", env.crc);
-        setDefaultEnvironment(env);
-        env.crc = crc32_le(0, envAddr, sizeof(env) - sizeof(env.crc));
-        return;
-    }
-    else if (!userConfig.configUpdated())
-    {
-        log_d("environment was valid and config was not updated.");
-        return;
+        log_d("Config was not updated.");
     }
     else
     {
-        log_d("environment was valid but config was updated.");
-    }
-
-    std::string city;
-    const JsonArray& locations = envFile["locations"];
-    size_t locationIndex = 0;
-    if (userConfig.locationIndexUpdated())
-    {
-        locationIndex = userConfig.getLocationIndex();
-        if (locationIndex >= locations.size())
+        log_d("Config was updated.");
+        std::string city;
+        const JsonArray& locations = envFile["locations"];
+        size_t locationIndex = 0;
+        if (userConfig.locationIndexUpdated())
         {
-            log_w("given location index is out of bounds, using default city.");
-            city = cCity;
-            env.latitude = cLatitude;
-            env.longitude = cLongitude;
+            locationIndex = userConfig.getLocationIndex();
+            if (locationIndex >= locations.size())
+            {
+                log_w("given location index is out of bounds, using default city.");
+                city = cCity;
+                env.latitude = cLatitude;
+                env.longitude = cLongitude;
+            }
+            else
+            {
+                city = locations[locationIndex]["city"] | cCity;
+                env.latitude = locations[locationIndex]["latitude"] | cLatitude;
+                env.longitude = locations[locationIndex]["longitude"] | cLongitude;
+                log_i("city changed to %s from index %d", city, locationIndex);
+            }
         }
-        else
-        {
-            city = locations[locationIndex]["city"] | cCity;
-            env.latitude = locations[locationIndex]["latitude"] | cLatitude;
-            env.longitude = locations[locationIndex]["longitude"] | cLongitude;
-            log_i("city changed to %s from index %d", city, locationIndex);
-        }
-    }
-    strlcpy(env.city, city.c_str(), cCityLength);
+        strlcpy(env.city, city.c_str(), cCityLength);
 
-    if (userConfig.useMetricUpdated())
-    {
-        env.metricUnits = userConfig.getUseMetric();
+        if (userConfig.useMetricUpdated())
+        {
+            env.metricUnits = userConfig.getUseMetric();
+        }
     }
 
     // Set CRC for updated environment
@@ -141,11 +142,9 @@ std::vector<std::string> GetLocationsFromFile(
 {
     std::vector<std::string> locations;
     sdcard::SdCard sdCard(display);
-    if (sdCard.openFile(filename))
+    JsonDocument envFile;
+    if (sdCard.readJsonFile(envFile, filename))
     {
-        JsonDocument envFile;
-        sdCard.readJsonFile(envFile, filename);
-
         const JsonArray& jsonLocations = envFile["locations"];
         log_d("locations list has %d items", locations.size());
         for (size_t i=0; i<jsonLocations.size(); i++)
