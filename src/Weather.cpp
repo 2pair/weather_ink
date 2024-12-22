@@ -137,6 +137,7 @@ void Weather::printHourlyWeather(const HourlyWeather& hourlyWeather)
 {
     log_i("--------- Hourly Weather ---------");
     log_i("Data for hour at: %d (tz %d)", hourlyWeather.timestamp, hourlyWeather.timeZone);
+    log_i("Hour is during %s", hourlyWeather.daytime ? "daytime" : "nighttime");
 
     log_i(
         "Current Temp:  %.2f (feels like %.2f)",

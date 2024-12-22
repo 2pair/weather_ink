@@ -37,6 +37,8 @@ bool metricUnits = false;
 uint32_t crc;
 };
 
+void setDefaultEnvironment(Environment& env);
+
 void setEnvironmentFromFile(
     Environment& env,
     const std::string& filename,

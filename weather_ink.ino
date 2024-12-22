@@ -44,7 +44,7 @@ void setup()
 {
     Serial.begin(115200);//921600
     // Very long initial timeout to safeguard against program hanging at any point
-    esp_task_wdt_init(10 * cSecondsPerMinute, true);
+    esp_task_wdt_init(4 * cSecondsPerMinute, true);
     enableLoopWDT();
     pinMode(cButtonPin,INPUT_PULLUP);
     log_d("gInterruptReset is %x", gInterruptReset);
