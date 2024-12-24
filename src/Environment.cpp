@@ -101,12 +101,11 @@ void setEnvironmentFromFile(
     else
     {
         log_d("Config was updated.");
-        std::string city;
-        const JsonArray& locations = envFile["locations"];
-        size_t locationIndex = 0;
         if (userConfig.locationIndexUpdated())
         {
-            locationIndex = userConfig.getLocationIndex();
+            std::string city;
+            const JsonArray& locations = envFile["locations"];
+            size_t locationIndex = userConfig.getLocationIndex();
             if (locationIndex >= locations.size())
             {
                 log_w("given location index is out of bounds, using default city.");
@@ -121,8 +120,8 @@ void setEnvironmentFromFile(
                 env.longitude = locations[locationIndex]["longitude"] | cLongitude;
                 log_i("city changed to %s from index %d", city, locationIndex);
             }
+            strlcpy(env.city, city.c_str(), cCityLength);
         }
-        strlcpy(env.city, city.c_str(), cCityLength);
 
         if (userConfig.useMetricUpdated())
         {

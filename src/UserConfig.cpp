@@ -9,6 +9,7 @@
 #include "Environment.h"
 #include "Renderer.h"
 
+
 extern uint32_t gInterruptReset;
 
 using namespace userconfig;
@@ -45,10 +46,20 @@ UserConfig::UserConfig(
         mReferenceTime(0)
 
 {
-    attachInterruptArg(buttonPin, buttonAction, this, FALLING);
+    enableButtonInterrupt();
 }
 
 UserConfig::~UserConfig()
+{
+    disableButtonInterrupt();
+}
+
+void UserConfig::enableButtonInterrupt()
+{
+    attachInterruptArg(mButtonPin, buttonAction, this, FALLING);
+}
+
+void UserConfig::disableButtonInterrupt()
 {
     detachInterrupt(mButtonPin);
 }
@@ -215,7 +226,9 @@ void UserConfig::stateDisplayLocationInstructions()
     };
     renderer::Renderer renderer(mDisplay);
     renderer.drawLinesCentered(lines, PatrickHand_Regular26pt7b, 12);
+    disableButtonInterrupt();
     renderer.render();
+    enableButtonInterrupt();
     mReferenceTime = esp_timer_get_time();
     mNextState = State::WaitForLocation;
 }
@@ -267,8 +280,9 @@ void UserConfig::stateDisplayUnitInstructions()
     };
     renderer::Renderer renderer(mDisplay);
     renderer.drawLinesCentered(lines, PatrickHand_Regular26pt7b, 12);
+    disableButtonInterrupt();
     renderer.render();
-
+    enableButtonInterrupt();
     mReferenceTime = esp_timer_get_time();
     mNextState = State::WaitForUnit;
 }
@@ -313,7 +327,9 @@ void UserConfig::stateDisplayUpdating()
     };
     renderer::Renderer renderer(mDisplay);
     renderer.drawLinesCentered(lines, PatrickHand_Regular26pt7b, 12);
+    disableButtonInterrupt();
     renderer.render();
+    enableButtonInterrupt();
     mNextState = State::Terminate;
 }
 

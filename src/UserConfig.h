@@ -56,6 +56,8 @@ class UserConfig
         void stateTerminate();
 
         void populateLocations();
+        void enableButtonInterrupt();
+        void disableButtonInterrupt();
 
         enum class State {
             // begin
