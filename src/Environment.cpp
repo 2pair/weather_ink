@@ -96,11 +96,11 @@ void setEnvironmentFromFile(
 
     if (!userConfig.configUpdated())
     {
-        log_d("Config was not updated.");
+        log_d("No new config updates.");
     }
     else
     {
-        log_d("Config was updated.");
+        log_d("Modifying config with new user input.");
         if (userConfig.locationIndexUpdated())
         {
             std::string city;
@@ -115,10 +115,19 @@ void setEnvironmentFromFile(
             }
             else
             {
-                city = locations[locationIndex]["city"] | cCity;
-                env.latitude = locations[locationIndex]["latitude"] | cLatitude;
-                env.longitude = locations[locationIndex]["longitude"] | cLongitude;
-                log_i("city changed to %s from index %d", city, locationIndex);
+                auto location = locations[locationIndex];
+                city = location["city"] | cCity;
+                env.latitude = location["latitude"] | cLatitude;
+                env.longitude = location["longitude"] | cLongitude;
+                log_i("city changed to %s at index %d", city.c_str(), locationIndex);
+                if (
+                    !(location.containsKey("city")
+                    && location.containsKey("latitude")
+                    && location.containsKey("longitude"))
+                )
+                {
+                    log_w("Location object was missing one or more required keys");
+                }
             }
             strlcpy(env.city, city.c_str(), cCityLength);
         }
@@ -145,7 +154,7 @@ std::vector<std::string> GetLocationsFromFile(
     if (sdCard.readJsonFile(envFile, filename))
     {
         const JsonArray& jsonLocations = envFile["locations"];
-        log_d("locations list has %d items", locations.size());
+        log_d("locations list has %d items", jsonLocations.size());
         for (size_t i=0; i<jsonLocations.size(); i++)
         {
             const std::string city = jsonLocations[i]["city"];

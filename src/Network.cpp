@@ -26,7 +26,7 @@ Network::Network(const std::string& ssid, const std::string& pass)
     WiFi.mode(WIFI_STA);
     WiFi.setSleep(false);
     mEventId = WiFi.onEvent(handleWiFiEvent);
-    auto status = WiFi.begin(ssid.c_str(), pass.c_str());
+    WiFi.begin(ssid.c_str(), pass.c_str());
     connectionActive = true;
     waitForConnection(cSecondsPerMinute);
     if (isConnected())
@@ -45,7 +45,7 @@ Network::~Network()
 void Network::shutDown() {
     log_i("Shutting down network connection");
     connectionActive = false;
-    auto disconnected = WiFi.disconnect(true, true);
+    WiFi.disconnect(true, true);
 }
 
 bool Network::isConnected()
@@ -155,6 +155,7 @@ void Network::handleWiFiEvent(arduino_event_id_t event, arduino_event_info_t eve
             // Connection is fully established
             connectionAttempts = 0;
             log_v("connection fully established, clearing connection attempts counter");
+            // fallthrough
         case ARDUINO_EVENT_WIFI_READY:
         case ARDUINO_EVENT_WIFI_SCAN_DONE:
         case ARDUINO_EVENT_WIFI_STA_START:
@@ -166,6 +167,9 @@ void Network::handleWiFiEvent(arduino_event_id_t event, arduino_event_info_t eve
         case ARDUINO_EVENT_WIFI_STA_AUTHMODE_CHANGE:
         case ARDUINO_EVENT_WIFI_STA_LOST_IP:
             connectionFailure = true;
+            break;
+        default:
+            // do nothing in all other cases
             break;
     }
     log_d("connectionActive is %s", (connectionActive) ? "true" : "false");
@@ -183,6 +187,6 @@ void Network::handleWiFiEvent(arduino_event_id_t event, arduino_event_info_t eve
         log_d("unexpected connection loss, changing to disconnected state");
         WiFi.disconnect(false, false);
         log_d("attempting reconnection");
-        auto status = WiFi.begin();
+        WiFi.begin();
     }
 }

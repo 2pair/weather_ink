@@ -68,7 +68,7 @@ Icon::Icon(Inkplate& display, const std::string&  iconName)
     }
 }
 
-const size_t Icon::getNearestFilePixelSize(size_t size) const
+size_t Icon::getNearestFilePixelSize(size_t size) const
 {
     // default to largest icon
     size_t filePixelSize = mIconSizes.back();
@@ -107,6 +107,7 @@ void Icon::draw(size_t x, size_t y, size_t size)
     }
     log_i("drawing icon %s", iconPath.c_str());
     mDisplay.drawImage(iconPath.c_str(), x, y, true, false);
+    mDisplay.drawRect(x, y, size, size, BLACK);
 }
 
 void Icon::drawCentered(size_t x, size_t y, size_t size)

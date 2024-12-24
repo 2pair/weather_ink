@@ -40,6 +40,7 @@ std::string OpenWeatherMap::getCurrentWeatherUrl() const
 std::string OpenWeatherMap::getHourlyWeatherUrl() const
 {
     //TODO
+    return "";
 }
 
 std::string OpenWeatherMap::getForecastedWeatherUrl() const

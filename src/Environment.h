@@ -10,7 +10,7 @@ namespace userconfig {
     class UserConfig;
 }
 
-static constexpr uint cCityLength = 17;
+static constexpr uint cCityLength = 33;
 static constexpr uint cSsidLength = 33;
 static constexpr uint cPassLength = 65;
 static constexpr uint cProviderLength = 17;
@@ -28,9 +28,9 @@ char pass[cPassLength];
 char provider[cProviderLength];
 char apiKey[cApiKeyLength];
 
-bool fakeApiUpdates = false;
+bool fakeApiUpdates;
 
-bool metricUnits = false;
+bool metricUnits;
 
 // CRC of all other fields, used to validate if all of the other data is valid
 // MUST BE LAST DATA IN STRUCT

@@ -48,7 +48,7 @@ class Icon
         bool exists() const;
 
         // Gets the closest icon size larger than the given size.
-        const size_t getNearestFilePixelSize(size_t size) const;
+        size_t getNearestFilePixelSize(size_t size) const;
 
     private:
         const std::string getPath(size_t size) const;

@@ -87,7 +87,8 @@ void Renderer::drawLinesCentered(
     heights.reserve(lines.size());
     for (auto& line : lines)
     {
-        auto [lineW, lineH] = getTextDimensions(line);
+        uint16_t lineW, lineH;
+        std::tie(lineW, lineH) = getTextDimensions(line);
         widths.emplace_back(lineW);
         heights.emplace_back(lineH);
     }
@@ -99,7 +100,6 @@ void Renderer::drawLinesCentered(
     auto lastLineStartVertical = textStartVertical;
     for (size_t i = 0; i < lines.size(); i++)
     {
-        auto& line = lines.at(i);
         auto lineStartHorizontal = (displayWidth - widths.at(i)) / 2;
         auto lineStartVertical = lastLineStartVertical + heights.at(i) + (lineSpacing);
         lastLineStartVertical = lineStartVertical;

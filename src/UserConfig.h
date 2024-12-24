@@ -85,7 +85,6 @@ class UserConfig
         State mState;
         State mNextState;
         bool mButtonPressed; // If the user pressed the button
-        int64_t mReferenceTime; // Used for calculating wait times
 
         /* variables to store results */
         bool mUpdated;

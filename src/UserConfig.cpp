@@ -35,16 +35,14 @@ UserConfig::UserConfig(
     :   mDisplay(display),
         cEnv(env),
         mButtonPin(buttonPin),
-        mUpdated(false),
+        mState(State::None),
+        mNextState(State::Initialize),
         mButtonPressed(false),
+        mUpdated(false),
         mLocationIndexUpdated(false),
         mLocationIndex(0),
         mUseMetricUpdated(false),
-        mUseMetric(false),
-        mState(State::None),
-        mNextState(State::Initialize),
-        mReferenceTime(0)
-
+        mUseMetric(false)
 {
     enableButtonInterrupt();
 }
@@ -95,7 +93,15 @@ void UserConfig::populateLocations()
     auto itr = std::find(mLocations.cbegin(), mLocations.cend(), std::string(cEnv.city));
     if (itr == mLocations.cend())
     {
-        log_w("Default city not in json list, defaulting index to 0");
+        log_w("Current city %s not in json list, defaulting index to 0", cEnv.city);
+        std::string locs;
+        for (auto& loc : mLocations)
+        {
+            locs += (loc + ", ");
+        }
+        log_d("available locations are: %s", locs.c_str());
+        mUpdated = true;
+        mLocationIndexUpdated = true;
         mLocationIndex = 0;
     }
     else
@@ -162,20 +168,20 @@ void UserConfig::stateInitialize()
         mNextState = State::DisplayUnitInstructions;
     }
     // Reset via timer from sleep (typical path)
-    else if (resetReason == ESP_RST_INT_WDT)
+    else if (resetReason == DEEPSLEEP_RESET)
     {
         // Technically this is also the reset reason when we are woken due to the button, but
-        // we are already checking for that, so the only reason left is the watchdog timeout
-        log_d("Woken by watchdog timer");
+        // we are already checking for that, so the only reason left is timed wake from sleep
+        log_d("Device reset from sleep");
         mNextState = State::Terminate;
     }
-    else if (resetReason == ESP_RST_DEEPSLEEP)
+    else if (resetReason == TG1WDT_SYS_RESET)
     {
-        log_d("Device reset from sleep");
+        log_d("Woken by watchdog timer");
         // This seems redundant with the watchdog timer reset reason...
         if (wakeReason == ESP_SLEEP_WAKEUP_TIMER)
         {
-            log_w("Woken from timer!?!");
+            log_w("Woken from timer");
             mNextState = State::Terminate;
         }
         else
@@ -185,14 +191,14 @@ void UserConfig::stateInitialize()
         }
     }
     // Booting from power off
-    else if (resetReason == ESP_RST_POWERON)
+    else if (resetReason == POWERON_RESET)
     {
         log_d("Booting from power off state");
         populateLocations();
         mNextState = State::DisplayLocationInstructions;
     }
     // booting from button press or watchdog timer expiration
-    else if (resetReason == ESP_RST_SW)
+    else if (resetReason == SW_RESET)
     {
         // User pushed button while device was awake
         if (gInterruptReset == cInterruptResetCode)
@@ -207,6 +213,11 @@ void UserConfig::stateInitialize()
             log_w("Restarted by watchdog reset again?!?");
             mNextState = State::Terminate;
         }
+    }
+    else if (resetReason == SW_CPU_RESET)
+    {
+        log_w("Device was reset from within software");
+        mNextState = State::Terminate;
     }
     else
     {
@@ -229,30 +240,22 @@ void UserConfig::stateDisplayLocationInstructions()
     disableButtonInterrupt();
     renderer.render();
     enableButtonInterrupt();
-    mReferenceTime = esp_timer_get_time();
     mNextState = State::WaitForLocation;
 }
 
 void UserConfig::stateWaitForLocation()
 {
     log_d("User Config state machine in state Wait For Location");
-    // Sleep 0.500 seconds
-    esp_sleep_enable_timer_wakeup(500 * cMicrosecondPerMillisecond);
+    esp_sleep_enable_timer_wakeup(cWaitTime);
     esp_sleep_enable_ext0_wakeup(mButtonPin, LOW);
     esp_light_sleep_start();
-    auto currentTime = esp_timer_get_time();
-    if (currentTime >= mReferenceTime + cWaitTime)
-    {
-        log_d("Current time is %d, reference time is %d, timeout time is %d ", currentTime, mReferenceTime, mReferenceTime + cWaitTime);
-        mNextState = State::DisplayUpdating;
-    }
-    else if (mButtonPressed)
+    if (mButtonPressed)
     {
         mNextState = State::SetLocation;
     }
     else
     {
-        mNextState = State::WaitForLocation;
+        mNextState = State::DisplayUpdating;
     }
 }
 
@@ -276,14 +279,15 @@ void UserConfig::stateDisplayUnitInstructions()
     std::vector<std::string> lines = {
         "Use the button to configure",
         "the units. Current units are",
-        (mUseMetric ? "metric." : "imperial.")
+        (mUseMetric ? "metric." : "imperial."),
+        "To select a new location turn the",
+        "device off and then on again."
     };
     renderer::Renderer renderer(mDisplay);
     renderer.drawLinesCentered(lines, PatrickHand_Regular26pt7b, 12);
     disableButtonInterrupt();
     renderer.render();
     enableButtonInterrupt();
-    mReferenceTime = esp_timer_get_time();
     mNextState = State::WaitForUnit;
 }
 
@@ -291,20 +295,16 @@ void UserConfig::stateWaitForUnit()
 {
     log_d("User Config state machine in state Wait For Unit");
     // Sleep 0.500 seconds
-    esp_sleep_enable_timer_wakeup(500 * cMicrosecondPerMillisecond);
+    esp_sleep_enable_timer_wakeup(cWaitTime);
     esp_sleep_enable_ext0_wakeup(mButtonPin, LOW);
     esp_light_sleep_start();
-    if (esp_timer_get_time() >= mReferenceTime + cWaitTime)
-    {
-        mNextState = State::DisplayUpdating;
-    }
-    else if (mButtonPressed)
+    if (mButtonPressed)
     {
         mNextState = State::SetUnit;
     }
     else
     {
-        mNextState = State::WaitForUnit;
+        mNextState = State::DisplayUpdating;
     }
 }
 
