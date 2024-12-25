@@ -243,7 +243,7 @@ void Renderer::drawCurrentConditions(
     mDisplay.println(sunset.data());
 
     // Current humidity
-    static constexpr size_t humidityIconMarginY = 8;
+    static constexpr size_t humidityIconMarginY = 2;
     static constexpr size_t humidityTextXMargin = sunTextXMargin, humidityTextYMargin = sunTextMarginY;
     std::string humidity =
         std::to_string(static_cast<int>(currentConditions.humidity)) + "%";
