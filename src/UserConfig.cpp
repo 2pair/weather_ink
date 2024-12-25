@@ -280,8 +280,9 @@ void UserConfig::stateDisplayUnitInstructions()
         "Use the button to configure",
         "the units. Current units are",
         (mUseMetric ? "metric." : "imperial."),
-        "To select a new location turn the",
-        "device off and then on again."
+        "To select a new location turn",
+        "the device off",
+        "and then on again."
     };
     renderer::Renderer renderer(mDisplay);
     renderer.drawLinesCentered(lines, PatrickHand_Regular26pt7b, 12);

@@ -112,14 +112,14 @@ void Weather::printDailyWeather(const DailyWeather& dailyWeather)
     );
 
     log_i(
-        "H: %.2f  P:  %.2f  V:  %.2f",
+        "H: %d  P:  %.2f  V:  %.2f",
         dailyWeather.humidity,
         dailyWeather.pressure,
         dailyWeather.visibility
     );
 
     log_i(
-        "Wind: %.2f  Gust:  %.2f  Deg:  %.2f",
+        "Wind: %.2f  Gust:  %.2f  Deg:  %.d",
         dailyWeather.windSpeed,
         dailyWeather.gustSpeed,
         dailyWeather.windDirection
@@ -153,13 +153,13 @@ void Weather::printHourlyWeather(const HourlyWeather& hourlyWeather)
     );
 
     log_i(
-        "H: %.2f  P:  %.2f",
+        "H: %d  P:  %.2f",
         hourlyWeather.humidity,
         hourlyWeather.pressure
     );
 
     log_i(
-        "Wind: %.2f  Deg:  %.2f",
+        "Wind: %.2f  Deg:  %d",
         hourlyWeather.windSpeed,
         hourlyWeather.windDirection
     );

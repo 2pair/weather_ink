@@ -40,6 +40,7 @@ time_t WeatherProvider::getCurrentWeather(
     if (success)
     {
         log_d("Converting JSON to current weather data");
+        currentWeather.metricUnits = mMetricUnits;
         toCurrentWeather(currentWeather, apiResponse);
     }
     else
@@ -86,6 +87,10 @@ time_t WeatherProvider::getForecastedWeather(
     if (success)
     {
         log_d("Converting JSON to forecast weather data");
+        for (auto& dailyWeather : forecastedWeather)
+        {
+            dailyWeather.metricUnits = mMetricUnits;
+        }
         toForecastedWeather(forecastedWeather, apiResponse);
     }
     else
@@ -132,6 +137,10 @@ time_t WeatherProvider::getHourlyWeather(
     if (success)
     {
         log_d("Converting JSON to hourly weather data");
+        for (auto& hourlyWeather : forecastedWeather)
+        {
+            hourlyWeather.metricUnits = mMetricUnits;
+        }
         toHourlyWeather(forecastedWeather, apiResponse);
     }
     else

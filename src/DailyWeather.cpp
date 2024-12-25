@@ -1,5 +1,6 @@
 #include "DailyWeather.h"
 
+#include <array>
 #include <string>
 #include <WString.h>
 #include <cstdlib>
@@ -61,6 +62,19 @@ bool weather::conditionIsWindy(Condition condition, float windSpeed)
         ) &&
         windSpeed >= cWindyThreshold
     );
+}
+
+std::string weather::windDegreeToDirection(uint16_t degrees)
+{
+    // 16 options, 22 degrees per option
+    size_t degreesPerDirection = 22;
+    std::array<std::string, 16> directions = {
+        "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
+    };
+    // Limit to the degrees in a circle and items in index
+    degrees = degrees % 360;
+    size_t index = (degrees / degreesPerDirection) % directions.size();
+    return directions[index];
 }
 
 const std::string weather::moonPhaseToString(const MoonPhase moonPhase)

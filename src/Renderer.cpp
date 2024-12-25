@@ -15,6 +15,8 @@
 #include "../fonts/PatrickHand_Regular26pt7b.h"
 #include "../fonts/PatrickHand_Regular31pt7b.h"
 #include "../fonts/PatrickHand_Regular41pt7b.h"
+#include "../fonts/PatrickHand_Regular48pt7b.h"
+#include "../fonts/PatrickHand_Regular56pt7b.h"
 #include "../fonts/PatrickHand_Regular67pt7b.h"
 
 #include "Icon.h"
@@ -116,11 +118,13 @@ void Renderer::drawCurrentConditions(
 {
     weather::Weather::printDailyWeather(currentConditions);
     auto weatherIcon = icon::iconFactory(mDisplay, currentConditions);
-    static constexpr size_t iconTopMargin = 95, iconHeight = 300;
+    static constexpr size_t iconTopMargin = 95, iconBottomMargin = 15, iconHeight = 300;
+    static constexpr size_t currentRightMarginX = 15, tempYMargin = 10, HighLowMarginY = 20;
     weatherIcon.draw(x, y + iconTopMargin, iconHeight);
 
     mDisplay.setTextSize(1);
     mDisplay.setTextColor(BLACK, WHITE);
+
     // Day name
     mDisplay.setFont(&PatrickHand_Regular41pt7b);
     auto day = timeutils::dayNameFromEpochTimestamp(
@@ -133,41 +137,68 @@ void Renderer::drawCurrentConditions(
     uint16_t txtCenterY = y + dayCenterY;
     mDisplay.setCursor(txtCenterX - (txtW / 2), txtCenterY + (txtH / 2));
     mDisplay.println(day.c_str());
+
     // Current temp
-    mDisplay.setFont(&PatrickHand_Regular67pt7b);
+    mDisplay.setFont(&PatrickHand_Regular56pt7b);
     std::string currentTemp =
         std::to_string(static_cast<int>(std::round(currentConditions.tempNow))) + "°";
     uint16_t tempW, tempH;
     std::tie(tempW, tempH) = getTextDimensions(currentTemp);
-    static constexpr size_t iconBottomMargin = 50, tempMargin = 25;
-    auto currentTempX =  x + tempMargin;
-    auto currentTempY = y + iconHeight + iconTopMargin + iconBottomMargin + tempH;
+    const size_t currentTempX =  x + tempYMargin;
+    const size_t currentTempY = y + iconTopMargin + iconHeight + iconBottomMargin + tempH;
     mDisplay.setCursor(currentTempX, currentTempY);
     mDisplay.println(currentTemp.c_str());
+
     // Today's high temp
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    std::string highTempId = "H: ";
+    uint16_t highTempIdW, highTempIdH;
+    std::tie(highTempIdW, highTempIdH) = getTextDimensions(highTempId);
+    // Compute and place the temp position so we can use its dimensions in the ID position
+
     mDisplay.setFont(&PatrickHand_Regular31pt7b);
-    static constexpr size_t paddingY = 5;
     std::string tempHigh =
         std::to_string(static_cast<int>(std::round(currentConditions.tempHigh))) + "°";
     uint16_t tempHighW, tempHighH;
     std::tie(tempHighW, tempHighH) = getTextDimensions(tempHigh);
-    auto tempHighLowMarginX = 20;
-    auto tempHighX = cCurrentWidth - tempHighW - tempHighLowMarginX;
-    auto tempHighY = currentTempY - tempH + tempHighH - paddingY;
+    //auto tempHighX =  x + cCurrentWidth - (tempHighW + currentRightMarginX);
+    const size_t tempHighX =  x + (cCurrentWidth * 0.59) + highTempIdW;
+    const size_t tempHighY = currentTempY - tempH + tempHighH;
     mDisplay.setCursor(tempHighX, tempHighY);
     mDisplay.println(tempHigh.c_str());
+
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    const size_t highTempIdX =  tempHighX - highTempIdW;
+    const size_t highTempIdY = tempHighY;
+    mDisplay.setCursor(highTempIdX, highTempIdY);
+    mDisplay.println(highTempId.c_str());
+
     // Today's low temp
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    std::string lowTempId = "L: ";
+    uint16_t lowTempIdW, lowTempIdH;
+    std::tie(lowTempIdW, lowTempIdH) = getTextDimensions(lowTempId);
+    // Compute and place the temp position so we can use its dimensions in the ID position
+
+    mDisplay.setFont(&PatrickHand_Regular31pt7b);
     std::string tempLow =
         std::to_string(static_cast<int>(std::round(currentConditions.tempLow))) + "°";
     uint16_t tempLowW, tempLowH;
     std::tie(tempLowW, tempLowH) = getTextDimensions(tempLow);
-    auto tempLowX = cCurrentWidth - tempLowW - tempHighLowMarginX;
-    auto tempLowY = currentTempY + paddingY;
+    const size_t tempLowX = tempHighX;
+    const size_t tempLowY = tempHighY + tempLowH + HighLowMarginY;
     mDisplay.setCursor(tempLowX, tempLowY);
     mDisplay.println(tempLow.c_str());
+
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    const size_t lowTempIdX =  tempLowX - lowTempIdW;
+    const size_t lowTempIdY = tempLowY;
+    mDisplay.setCursor(lowTempIdX, lowTempIdY);
+    mDisplay.println(lowTempId.c_str());
+
     // Today's sunrise
-    static constexpr size_t sunTextXMargin = 18, sunTextMarginY = 10;
-    static constexpr int sunIconMarginX = -4, sunIconMarginY = -3;
+    static constexpr size_t sunTextXMargin = 10, sunTextMarginY = 10;
+    static constexpr int dataIconMarginX = -4, dataIconMarginY = -3;
     mDisplay.setFont(&PatrickHand_Regular16pt7b);
 
     tm timeData;
@@ -182,10 +213,15 @@ void Renderer::drawCurrentConditions(
     std::tie(sunriseW, sunriseH) = getTextDimensions(sunrise.data());
     auto sunriseIcon = icon::Icon(mDisplay, icon::cSunriseIconName);
     const size_t sunriseStartY = currentTempY + sunriseH + sunTextMarginY;
-    const size_t sunriseIconSize = sunriseH; //sunriseIcon.getNearestFilePixelSize(sunriseH);
-    sunriseIcon.draw(currentTempX + sunIconMarginX, sunriseStartY + sunIconMarginY, sunriseIconSize);
-    mDisplay.setCursor(currentTempX + sunTextXMargin + sunriseIconSize, sunriseStartY + sunriseH);
+    static constexpr size_t sunriseIconSize = 50;
+    const size_t sunriseIconX = x + dataIconMarginX;
+    const size_t sunriseIconY = y + cCurrentHeight - sunriseIconSize - dataIconMarginY;
+    sunriseIcon.draw(sunriseIconX, sunriseIconY, sunriseIconSize);
+    const size_t sunriseTextX = sunriseIconX + sunriseIconSize + sunTextXMargin;
+    const size_t sunriseTextY = sunriseIconY + ((sunriseIconSize - sunriseH) / 2) + sunriseH - dataIconMarginY;
+    mDisplay.setCursor(sunriseTextX, sunriseTextY);
     mDisplay.println(sunrise.data());
+
     // Today's sunset
     auto sunsetTimestamp = timeutils::localTime(
         currentConditions.sunset,
@@ -197,13 +233,50 @@ void Renderer::drawCurrentConditions(
     uint16_t sunsetW, sunsetH;
     std::tie(sunsetW, sunsetH) = getTextDimensions(sunset.data());
     auto sunsetIcon = icon::Icon(mDisplay, icon::cSunsetIconName);
-    static constexpr size_t sunsetTextExtraMarginX = 2;
-    const size_t sunsetStartX = currentTempX + ((cCurrentWidth + sunTextXMargin) / 2) + sunsetTextExtraMarginX;
-    const size_t sunsetStartY = sunriseStartY;
-    const size_t sunsetIconSize = sunsetH;
-    sunsetIcon.draw(sunsetStartX + sunIconMarginX, sunsetStartY + sunIconMarginY, sunsetIconSize);
-    mDisplay.setCursor(sunsetStartX + sunTextXMargin + sunsetIconSize, sunsetStartY + sunsetH);
+    const size_t sunsetIconX = currentTempX + ((cCurrentWidth + sunTextXMargin) / 2);
+    const size_t sunsetIconY = sunriseIconY;
+    static constexpr size_t sunsetIconSize = sunriseIconSize;
+    sunriseIcon.draw(sunsetIconX, sunsetIconY, sunsetIconSize);
+    const size_t sunsetTextX = sunsetIconX + sunsetIconSize + sunTextXMargin;
+    const size_t sunsetTextY = sunsetIconY + ((sunsetIconSize - sunsetH) / 2) + sunsetH - dataIconMarginY;
+    mDisplay.setCursor(sunsetTextX, sunsetTextY);
     mDisplay.println(sunset.data());
+
+    // Current humidity
+    static constexpr size_t humidityIconMarginY = 8;
+    static constexpr size_t humidityTextXMargin = sunTextXMargin, humidityTextYMargin = sunTextMarginY;
+    std::string humidity =
+        std::to_string(static_cast<int>(currentConditions.humidity)) + "%";
+    uint16_t humidityW, humidityH;
+    std::tie(humidityW, humidityH) = getTextDimensions(humidity);
+    static constexpr size_t humidityIconSize = 35;
+    auto humidityIcon = icon::Icon(mDisplay, icon::cHumidityIconName);
+    const size_t humidityIconX = x - dataIconMarginX;
+    const size_t humidityIconY = sunriseIconY - humidityIconSize - humidityIconMarginY;
+    humidityIcon.draw(humidityIconX, humidityIconY, humidityIconSize);
+    const size_t humidityTextX = humidityIconX + humidityIconSize + humidityTextXMargin;
+    const size_t humidityTextY = humidityIconY + ((humidityIconSize - humidityH) / 2) + humidityH - dataIconMarginY;
+    mDisplay.setCursor(humidityTextX, humidityTextY);
+    mDisplay.println(humidity.data());
+
+    // Current wind
+    static constexpr size_t windTextXMargin = humidityTextXMargin, windTextYMargin = humidityTextYMargin;
+    std::string wind = std::to_string(static_cast<float>(currentConditions.windSpeed));
+    auto position = wind.find(".");
+    if (position != std::string::npos)
+    {
+        // truncate to two decimals
+        wind.resize((position + 2) + 1);
+    }
+    wind += (currentConditions.metricUnits ? " kps " : " mph ");
+    wind += weather::windDegreeToDirection(currentConditions.windDirection);
+    uint16_t windW, windH;
+    std::tie(windW, windH) = getTextDimensions(wind);
+    const size_t windTextX = x + (cCurrentWidth * 0.45);
+    const size_t windyTextY = humidityTextY;
+    mDisplay.setCursor(windTextX, windyTextY);
+    mDisplay.println(wind.data());
+
 }
 
 void Renderer::drawHourlyForecast(
@@ -325,7 +398,7 @@ void Renderer::drawForecastForDay(
     log_i("Drawing forecast");
     // Totally clear area to create visual separation
     static constexpr size_t iconTopMarginY = 5;
-    static constexpr size_t textTopMarginY = 25;
+    static constexpr size_t textTopMarginY = 15;
     static constexpr size_t textRightMarginX = 5;
 
     auto weatherIcon = icon::iconFactory(mDisplay, forecast);
@@ -334,39 +407,76 @@ void Renderer::drawForecastForDay(
 
     mDisplay.setTextSize(1);
     mDisplay.setTextColor(BLACK, WHITE);
-    mDisplay.setFont(&PatrickHand_Regular31pt7b);
-    static constexpr size_t tempLowToDayMarginY = 15;
+    static constexpr size_t dataMarginY = 13;
 
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    std::string highTempId = "H: ";
+    uint16_t highTempIdW, highTempIdH;
+    std::tie(highTempIdW, highTempIdH) = getTextDimensions(highTempId);
+    // Compute and place the temp position so we can use its dimensions in the ID position
+
+    mDisplay.setFont(&PatrickHand_Regular26pt7b);
     std::string tempHigh =
         std::to_string(static_cast<int>(std::round(forecast.tempHigh))) + "°";
     uint16_t tempHighW, tempHighH;
     std::tie(tempHighW, tempHighH) = getTextDimensions(tempHigh);
-    int16_t tempMarginX = 5;
-    auto tempHighX = x + iconWidth + tempMarginX;
-    auto tempHighY = y + textTopMarginY + tempHighH;
+    const size_t tempHighX = x + (cForecastWidth * 0.62) + highTempIdW;
+    const size_t tempHighY = y + textTopMarginY + tempHighH;
     mDisplay.setCursor(tempHighX, tempHighY);
     mDisplay.println(tempHigh.c_str());
 
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    const size_t highTempIdX =  tempHighX - highTempIdW;
+    const size_t highTempIdY = tempHighY;
+    mDisplay.setCursor(highTempIdX, highTempIdY);
+    mDisplay.println(highTempId.c_str());
+
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    std::string lowTempId = "L: ";
+    uint16_t lowTempIdW, lowTempIdH;
+    std::tie(lowTempIdW, lowTempIdH) = getTextDimensions(lowTempId);
+
+    mDisplay.setFont(&PatrickHand_Regular26pt7b);
     std::string tempLow =
         std::to_string(static_cast<int>(std::round(forecast.tempLow))) + "°";
     uint16_t tempLowW, tempLowH;
     std::tie(tempLowW, tempLowH) = getTextDimensions(tempLow);
-    auto tempLowX = tempHighX;
-    auto tempLowY = y + cForecastHeight - tempLowH - tempLowToDayMarginY;
+    const size_t tempLowX = tempHighX;
+    const size_t tempLowY = tempHighY + tempLowH + dataMarginY;
     mDisplay.setCursor(tempLowX, tempLowY);
     mDisplay.println(tempLow.c_str());
+
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    const size_t lowTempIdX =  tempLowX - lowTempIdW;
+    const size_t lowTempIdY = tempLowY;
+    mDisplay.setCursor(lowTempIdX, lowTempIdY);
+    mDisplay.println(lowTempId.c_str());
+
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    std::string precipId =
+        (forecast.condition == weather::Condition::snow || forecast.condition == weather::Condition::wintryMix)
+        ? "snow: " : "rain: ";
+    uint16_t precipIdW, precipIdH;
+    std::tie(precipIdW, precipIdH) = getTextDimensions(precipId);
 
     mDisplay.setFont(&PatrickHand_Regular26pt7b);
     std::string chanceRain =
         std::to_string(static_cast<uint>(std::round(forecast.chanceOfPrecipitation * 100))) + "%";
-    uint16_t chanceRainW, ChanceRainH;
-    std::tie(chanceRainW, ChanceRainH) = getTextDimensions(chanceRain);
-    auto chanceRainX = x + cForecastWidth - chanceRainW - textRightMarginX;
-    auto chanceRainY = y + (cForecastHeight / 2);
+    uint16_t chanceRainW, chanceRainH;
+    std::tie(chanceRainW, chanceRainH) = getTextDimensions(chanceRain);
+    const size_t chanceRainX = tempLowX;
+    const size_t chanceRainY = tempLowY + chanceRainH + dataMarginY;
     mDisplay.setCursor(chanceRainX, chanceRainY);
     mDisplay.println(chanceRain.c_str());
 
-    static constexpr size_t dayBottomMarginY = 15;
+    mDisplay.setFont(&PatrickHand_Regular16pt7b);
+    const size_t precipIdX =  chanceRainX - precipIdW;
+    const size_t precipIdY = chanceRainY;
+    mDisplay.setCursor(precipIdX, precipIdY);
+    mDisplay.println(precipId.c_str());
+
+    mDisplay.setFont(&PatrickHand_Regular26pt7b);
+    static constexpr size_t dayBottomMarginY = 10;
     // This time will be midnight GMT, no need to convert to local timezone
     auto day = timeutils::dayNameFromEpochTimestamp(forecast.timestamp);
     uint16_t txtW, txtH;

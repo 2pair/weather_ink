@@ -46,6 +46,8 @@ struct TemporalWeather {
     // offset from UTC, in hours. Needed per-day due to daylight savings time.
     // This is determined from data retrieved from the weather provider's API.
     int8_t timeZone = 0;
+    // All values should either be metric or imperial
+    bool metricUnits = false;
 
     float tempNow = 0.0;
     float feelsLike = 0.0;
@@ -54,11 +56,11 @@ struct TemporalWeather {
     float chanceOfPrecipitation = 0.0; // out of 1.0
     float precipitation = 0.0;
 
-    float humidity = 0.0;
+    uint8_t humidity = 0.0;
     float pressure = 0.0;
 
     float windSpeed = 0.0;
-    float windDirection = 0.0;
+    int16_t windDirection = 0;
 
     MoonPhase moonPhase = MoonPhase::unknownPhase;
 };
@@ -87,6 +89,7 @@ const std::string conditionToString(const Condition condition);
 
 constexpr size_t cWindyThreshold = 15; // mph
 bool conditionIsWindy(Condition condition, float windSpeed);
+std::string windDegreeToDirection(uint16_t degrees);
 
 const std::string moonPhaseToString(const MoonPhase moonPhase);
 MoonPhase parseMoonPhase(const std::string moonPhase, const size_t illuminationPct);

@@ -21,6 +21,7 @@ The files should be stored based on size in /icons/<size_pixels>/<icon_name><siz
 
 const std::string cSunsetIconName = (const char*)F("suns");
 const std::string cSunriseIconName = (const char*)F("sunr");
+const std::string cHumidityIconName = (const char*)F("humid");
 
 class Icon
 {

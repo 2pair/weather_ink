@@ -53,7 +53,8 @@ Icon::Icon(Inkplate& display, const std::string&  iconName)
     srcDir.close();
     if (mIconSizes.empty())
     {
-        log_d("No icon directory contained an icon with name '%s'", iconName);
+        log_d("No icon directory contained an icon with name '%s'", iconName.c_str());
+        return;
     }
     sort(mIconSizes.begin(), mIconSizes.end());
     auto separatorPosition = fileName.find_last_of('.');
@@ -71,6 +72,10 @@ Icon::Icon(Inkplate& display, const std::string&  iconName)
 size_t Icon::getNearestFilePixelSize(size_t size) const
 {
     // default to largest icon
+    if (mIconSizes.empty())
+    {
+        return 0;
+    }
     size_t filePixelSize = mIconSizes.back();
     for (auto pixelSize : mIconSizes)
     {
@@ -86,6 +91,12 @@ size_t Icon::getNearestFilePixelSize(size_t size) const
 void Icon::draw(size_t x, size_t y, size_t size)
 {
     auto filePixelSize = Icon::getNearestFilePixelSize(size);
+    if (filePixelSize == 0)
+    {
+        // No icon was found, nothing to draw
+        log_w("Could not draw icon %s due to no file being found", mIconName.c_str());
+        return;
+    }
     auto iconPath = getPath(filePixelSize);
     // Enables SD card device for just this scope
     sdcard::SdCard sdCard(mDisplay);
@@ -107,7 +118,6 @@ void Icon::draw(size_t x, size_t y, size_t size)
     }
     log_i("drawing icon %s", iconPath.c_str());
     mDisplay.drawImage(iconPath.c_str(), x, y, true, false);
-    mDisplay.drawRect(x, y, size, size, BLACK);
 }
 
 void Icon::drawCentered(size_t x, size_t y, size_t size)

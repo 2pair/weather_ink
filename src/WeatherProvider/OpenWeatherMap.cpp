@@ -30,7 +30,7 @@ std::string OpenWeatherMap::getCurrentWeatherUrl() const
     const char* format = (char *)F("weather?lat=%.4f&lon=%.4f&appid=%s&units=imperial");
     int resultSize = std::snprintf( nullptr, 0, format, mLatitude, mLongitude, mApiKey.c_str()) + 1;
     auto size = static_cast<size_t>(resultSize);
-    std::vector<char> endpoint;;
+    std::vector<char> endpoint;
     endpoint.reserve(size);
 
     std::snprintf(endpoint.data(), size, format, mLatitude, mLongitude, mApiKey.c_str());
