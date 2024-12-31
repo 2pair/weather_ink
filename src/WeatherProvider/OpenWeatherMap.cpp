@@ -77,10 +77,14 @@ void OpenWeatherMap::toCurrentWeather(
 
     const uint16_t code =  currentApiResponse["weather"][0]["id"];
     currentWeather.condition = codeToConditions(code);
-        float mmRain = currentApiResponse["rain"]["3h"];
-        currentWeather.precipitation = mmRain /  25.4;
-        float mmSnow = currentApiResponse["snow"]["3h"];
-        currentWeather.precipitation = mmSnow /  25.4;
+    if (currentWeather.condition == weather::Condition::unknown)
+    {
+        log_w("Condition code %d did not map to a valid condition", code);
+    }
+    float mmRain = currentApiResponse["rain"]["3h"];
+    currentWeather.precipitation = mmRain /  25.4;
+    float mmSnow = currentApiResponse["snow"]["3h"];
+    currentWeather.precipitation = mmSnow /  25.4;
 
     if (conditionIsWindy(currentWeather.condition, currentWeather.windSpeed)) {
         currentWeather.condition = Condition::windy;
@@ -129,6 +133,10 @@ uint8_t OpenWeatherMap::toForecastedWeather(
 
         uint16_t code = dailyData["weather"][0]["id"];
         dailyWeather.condition = codeToConditions(code);
+        if (dailyWeather.condition == weather::Condition::unknown)
+        {
+            log_w("Condition code %d did not map to a valid condition", code);
+        }
         dailyWeather.precipitation = dailyData["rain"].as<float>() /  25.4;
         dailyWeather.precipitation += dailyData["snow"].as<float>() /  25.4;
 
@@ -209,7 +217,7 @@ uint8_t OpenWeatherMap::toHourlyWeather(
     }
     else
     {
-        return Condition::unknownCondition;
+        return Condition::unknown;
     }
 }
 

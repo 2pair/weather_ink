@@ -45,7 +45,7 @@ const std::string  weather::conditionToString(const Condition condition)
             return (const char *)F("Wintry Mix");
         case Condition::windy:
             return (const char *)F("Windy");
-        case Condition::unknownCondition:
+        case Condition::unknown:
         default:
             return (const char *)F("Unknown Conditions");
     }

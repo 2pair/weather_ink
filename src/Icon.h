@@ -118,7 +118,7 @@ const std::string Icon::getIconNameForConditions(const T_weatherData& weatherDat
             return (const char *)F("wmx");
         case Condition::windy:
             return (const char *)F("wnd");
-        case Condition::unknownCondition:
+        case Condition::unknown:
         default:
             log_d("Icon not found");
             return (const char *)F("undef");

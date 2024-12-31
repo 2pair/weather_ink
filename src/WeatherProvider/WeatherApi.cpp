@@ -186,6 +186,10 @@ void WeatherApi::toCurrentWeather(
 
     const uint16_t code =  currentApiResponse["current"]["condition"]["code"];
     currentWeather.condition = codeToConditions(code);
+    if (currentWeather.condition == weather::Condition::unknown)
+    {
+        log_w("Condition code %d did not map to a valid condition", code);
+    }
     auto windSpeedMph = currentWeather.windSpeed * (mMetricUnits ? 1.6 : 1);
     if (conditionIsWindy(currentWeather.condition, windSpeedMph)) {
         currentWeather.condition = weather::Condition::windy;
@@ -233,6 +237,10 @@ void WeatherApi::toForecastedWeather(
 
     uint16_t code = dailyDayData["condition"]["code"];
     dailyWeather.condition = codeToConditions(code);
+    if (dailyWeather.condition == weather::Condition::unknown)
+    {
+        log_w("Condition code %d did not map to a valid condition", code);
+    }
     dailyWeather.precipitation = dailyDayData[(_s("totalprecip_") +=  mMetricUnits ? "mm" : "in").c_str()];
     dailyWeather.precipitation += (dailyDayData["totalsnow_cm"].as<float>() /  (mMetricUnits ? 0.1 : 2.54));
     if (conditionIsWindy(dailyWeather.condition, dailyWeather.windSpeed))
@@ -362,6 +370,10 @@ uint8_t WeatherApi::toHourlyWeather(
 
             uint16_t code = hourlyData["condition"]["code"];
             hourlyWeather.condition = codeToConditions(code);
+            if (hourlyWeather.condition == weather::Condition::unknown)
+            {
+                log_w("Condition code %d did not map to a valid condition", code);
+            }
             hourlyWeather.precipitation = hourlyData[(_s("precip_") +=  mMetricUnits ? "mm" : "in").c_str()];
             hourlyWeather.precipitation += hourlyData["snow_cm"].as<float>() /  (mMetricUnits ? 0.1 : 2.54);
 
@@ -400,6 +412,7 @@ uint8_t WeatherApi::toHourlyWeather(
         return Condition::lightning;
     case 1273:
     case 1276:
+    case 1087:
         return Condition::thunderstorm;
     case 1030:
     case 1150:
@@ -458,7 +471,7 @@ uint8_t WeatherApi::toHourlyWeather(
     case 1009:
         return Condition::cloudy;
     default:
-        return Condition::unknownCondition;
+        return Condition::unknown;
     }
 }
 

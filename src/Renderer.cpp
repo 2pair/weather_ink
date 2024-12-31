@@ -45,7 +45,7 @@ void Renderer::update(const weather::Weather& weatherData, const char* city)
     for (size_t i = 1; i < 1 + daysToForecast; i++)
     {
         auto& forecast = weatherData.getDailyWeather(i);
-        if (forecast.condition == weather::Condition::unknownCondition)
+        if (forecast.condition == weather::Condition::unknown)
         {
             // This indicates we don't have forecast for this day, or likely any beyond it.
             log_w("Forecast for day at index %d had unknown conditions", i);
@@ -139,7 +139,7 @@ void Renderer::drawCurrentConditions(
     mDisplay.println(day.c_str());
 
     // Current temp
-    mDisplay.setFont(&PatrickHand_Regular56pt7b);
+    mDisplay.setFont(&PatrickHand_Regular48pt7b);
     std::string currentTemp =
         std::to_string(static_cast<int>(std::round(currentConditions.tempNow))) + "°";
     uint16_t tempW, tempH;
@@ -236,7 +236,7 @@ void Renderer::drawCurrentConditions(
     const size_t sunsetIconX = currentTempX + ((cCurrentWidth + sunTextXMargin) / 2);
     const size_t sunsetIconY = sunriseIconY;
     static constexpr size_t sunsetIconSize = sunriseIconSize;
-    sunriseIcon.draw(sunsetIconX, sunsetIconY, sunsetIconSize);
+    sunsetIcon.draw(sunsetIconX, sunsetIconY, sunsetIconSize);
     const size_t sunsetTextX = sunsetIconX + sunsetIconSize + sunTextXMargin;
     const size_t sunsetTextY = sunsetIconY + ((sunsetIconSize - sunsetH) / 2) + sunsetH - dataIconMarginY;
     mDisplay.setCursor(sunsetTextX, sunsetTextY);
@@ -261,14 +261,14 @@ void Renderer::drawCurrentConditions(
 
     // Current wind
     static constexpr size_t windTextXMargin = humidityTextXMargin, windTextYMargin = humidityTextYMargin;
-    std::string wind = std::to_string(static_cast<float>(currentConditions.windSpeed));
+    std::string wind = std::to_string(currentConditions.windSpeed);
     auto position = wind.find(".");
     if (position != std::string::npos)
     {
-        // truncate to two decimals
-        wind.resize((position + 2) + 1);
+        // truncate to one decimals
+        wind.resize((position + 1) + 1);
     }
-    wind += (currentConditions.metricUnits ? " kps " : " mph ");
+    wind += (currentConditions.metricUnits ? " kph " : " mph ");
     wind += weather::windDegreeToDirection(currentConditions.windDirection);
     uint16_t windW, windH;
     std::tie(windW, windH) = getTextDimensions(wind);
@@ -320,8 +320,8 @@ void Renderer::drawHourlyForecast(
     {
         log_w("There is not enough data to fully populate the hourly forecast.");
     }
-    static constexpr size_t textMarginH = 15;
-    static constexpr size_t textMarginW = 4;
+    static constexpr size_t textMarginY = 15;
+    static constexpr size_t textMarginX = 4;
 
     mDisplay.setTextColor(BLACK, WHITE);
     mDisplay.setTextSize(1);
@@ -355,9 +355,9 @@ void Renderer::drawHourlyForecast(
             std::to_string(static_cast<uint>(std::round(hourlyForecast.chanceOfPrecipitation * 100)))  + "%";
         uint16_t chanceRainW, chanceRainH;
         std::tie(chanceRainW, chanceRainH) = getTextDimensions(chanceRain);
-        uint16_t combinedWidth = chanceRainW + textMarginH + iconWidth;
-        uint16_t chanceRainX = tickTopCenterX - (combinedWidth / 2) +  textMarginW + iconWidth;
-        uint16_t chanceRainY = tickTopCenterY - textMarginH;
+        uint16_t combinedWidth = chanceRainW + textMarginX + iconWidth;
+        uint16_t chanceRainX = tickTopCenterX - (combinedWidth / 2) +  textMarginX + iconWidth;
+        uint16_t chanceRainY = tickTopCenterY - textMarginY;
         mDisplay.setCursor(chanceRainX, chanceRainY);
         mDisplay.println(chanceRain.c_str());
 
@@ -372,7 +372,7 @@ void Renderer::drawHourlyForecast(
         uint16_t tempW, tempH;
         std::tie(tempW, tempH) = getTextDimensions(temp);
         uint16_t tempX = tickTopCenterX - (tempW / 2);
-        uint16_t tempY = tickTopCenterY - (textMarginH * 2) - chanceRainH;
+        uint16_t tempY = tickTopCenterY - (textMarginY * 2) - chanceRainH;
         mDisplay.setCursor(tempX, tempY);
         mDisplay.println(temp.c_str());
 
@@ -383,7 +383,7 @@ void Renderer::drawHourlyForecast(
         uint16_t timeW, timeH;
         std::tie(timeW, timeH) = getTextDimensions(time);
         uint16_t timeX = tickBottomCenterX - (timeW / 2);
-        uint16_t timeY = tickBottomCenterY + timeH + textMarginH;
+        uint16_t timeY = tickBottomCenterY + timeH + textMarginY;
         mDisplay.setCursor(timeX, timeY);
         mDisplay.println(time.c_str());
     }

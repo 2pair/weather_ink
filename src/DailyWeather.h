@@ -9,7 +9,7 @@ namespace weather
 
 enum class Condition
 {
-    unknownCondition,
+    unknown,
     clear,
     partlyCloudy,
     cloudy,
@@ -52,7 +52,7 @@ struct TemporalWeather {
     float tempNow = 0.0;
     float feelsLike = 0.0;
 
-    Condition condition = Condition::unknownCondition;
+    Condition condition = Condition::unknown;
     float chanceOfPrecipitation = 0.0; // out of 1.0
     float precipitation = 0.0;
 

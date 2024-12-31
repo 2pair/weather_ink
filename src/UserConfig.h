@@ -24,7 +24,7 @@ namespace userconfig {
  */
 class UserConfig
 {
-    friend void buttonAction(void*);
+    friend void wakeupCallback(void*);
     public:
         // buttonPin: The ESP32 GPIO pin that the button is connected to
         // env: current environment
@@ -98,6 +98,6 @@ class UserConfig
 
 // callback when user presses the 'wake' button on the device.
 // argument is an instance of the UserConfig class.
-void buttonAction(void* configClass);
+void wakeupCallback(void* configClass);
 
 }

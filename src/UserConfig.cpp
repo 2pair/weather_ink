@@ -14,7 +14,7 @@ extern uint32_t gInterruptReset;
 
 using namespace userconfig;
 
-void IRAM_ATTR userconfig::buttonAction(void* configClass)
+void IRAM_ATTR userconfig::wakeupCallback(void* configClass)
 {
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_TIMER);
     if (esp_sleep_get_wakeup_cause() != ESP_SLEEP_WAKEUP_EXT0)
@@ -22,6 +22,7 @@ void IRAM_ATTR userconfig::buttonAction(void* configClass)
         // woken from timer, not button.
         return;
     }
+    // woken from button, respond to user's input
     auto userConfig = reinterpret_cast<UserConfig*>(configClass);
     userConfig->mButtonPressed = true;
     log_d("user pressed the button");
@@ -54,7 +55,7 @@ UserConfig::~UserConfig()
 
 void UserConfig::enableButtonInterrupt()
 {
-    attachInterruptArg(mButtonPin, buttonAction, this, FALLING);
+    attachInterruptArg(mButtonPin, wakeupCallback, this, FALLING);
 }
 
 void UserConfig::disableButtonInterrupt()
@@ -164,8 +165,8 @@ void UserConfig::stateInitialize()
     if (wakeReason == ESP_SLEEP_WAKEUP_EXT0)
     {
         log_d("Woken from external interrupt");
-        mUseMetric = cEnv.metricUnits;
-        mNextState = State::DisplayUnitInstructions;
+        populateLocations();
+        mNextState = State::DisplayLocationInstructions;
     }
     // Reset via timer from sleep (typical path)
     else if (resetReason == DEEPSLEEP_RESET)
@@ -194,8 +195,8 @@ void UserConfig::stateInitialize()
     else if (resetReason == POWERON_RESET)
     {
         log_d("Booting from power off state");
-        populateLocations();
-        mNextState = State::DisplayLocationInstructions;
+        mUseMetric = cEnv.metricUnits;
+        mNextState = State::DisplayUnitInstructions;
     }
     // booting from button press or watchdog timer expiration
     else if (resetReason == SW_RESET)
@@ -204,8 +205,8 @@ void UserConfig::stateInitialize()
         if (gInterruptReset == cInterruptResetCode)
         {
             log_d("Restarted from external interrupt");
-            mUseMetric = cEnv.metricUnits;
-            mNextState = State::DisplayUnitInstructions;
+            populateLocations();
+            mNextState = State::DisplayLocationInstructions;
         }
         // Watchdog timer expired
         else
@@ -233,7 +234,10 @@ void UserConfig::stateDisplayLocationInstructions()
         "Use the button to configure",
         "the current location.",
         "Current location is",
-        mLocations.at(mLocationIndex) + "  (" + std::to_string(mLocationIndex + 1) + "/" + std::to_string(mLocations.size()) + ")"
+        mLocations.at(mLocationIndex) + "  (" + std::to_string(mLocationIndex + 1) + "/" + std::to_string(mLocations.size()) + ")",
+        "To change the current units",
+        "turn the device off and then",
+        "on again."
     };
     renderer::Renderer renderer(mDisplay);
     renderer.drawLinesCentered(lines, PatrickHand_Regular26pt7b, 12);
@@ -279,10 +283,7 @@ void UserConfig::stateDisplayUnitInstructions()
     std::vector<std::string> lines = {
         "Use the button to configure",
         "the units. Current units are",
-        (mUseMetric ? "metric." : "imperial."),
-        "To select a new location turn",
-        "the device off",
-        "and then on again."
+        (mUseMetric ? "metric." : "imperial.")
     };
     renderer::Renderer renderer(mDisplay);
     renderer.drawLinesCentered(lines, PatrickHand_Regular26pt7b, 12);
