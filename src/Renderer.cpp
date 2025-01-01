@@ -207,8 +207,13 @@ void Renderer::drawCurrentConditions(
         currentConditions.timeZone
     );
     gmtime_r(&sunriseTimestamp, &timeData);
-    std::array<char, 9> sunrise;
+    std::vector<char> sunrise;
+    sunrise.reserve(9);
     strftime(sunrise.data(), sunrise.size(), "%I:%M %p", &timeData);
+    if (sunrise.front() == '0')
+    {
+        sunrise.erase(sunrise.cbegin());
+    }
     uint16_t sunriseW, sunriseH;
     std::tie(sunriseW, sunriseH) = getTextDimensions(sunrise.data());
     auto sunriseIcon = icon::Icon(mDisplay, icon::cSunriseIconName);
@@ -228,8 +233,13 @@ void Renderer::drawCurrentConditions(
         currentConditions.timeZone
     );
     gmtime_r(&sunsetTimestamp, &timeData);
-    std::array<char, 9> sunset;
+    std::vector<char> sunset;
+    sunset.reserve(9);
     strftime(sunset.data(), sunset.size(), "%I:%M %p", &timeData);
+    if (sunset.front() == '0')
+    {
+        sunset.erase(sunset.cbegin());
+    }
     uint16_t sunsetW, sunsetH;
     std::tie(sunsetW, sunsetH) = getTextDimensions(sunset.data());
     auto sunsetIcon = icon::Icon(mDisplay, icon::cSunsetIconName);
@@ -477,8 +487,8 @@ void Renderer::drawForecastForDay(
 
     mDisplay.setFont(&PatrickHand_Regular26pt7b);
     static constexpr size_t dayBottomMarginY = 10;
-    // This time will be midnight GMT, no need to convert to local timezone
-    auto day = timeutils::dayNameFromEpochTimestamp(forecast.timestamp);
+    auto day = timeutils::dayNameFromEpochTimestamp(
+        timeutils::localTime(forecast.timestamp, forecast.timeZone));
     uint16_t txtW, txtH;
     std::tie(txtW, txtH) = getTextDimensions(day);
     uint16_t txtCenterX = x + (cForecastWidth / 2);
