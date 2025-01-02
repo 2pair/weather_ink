@@ -207,15 +207,15 @@ void Renderer::drawCurrentConditions(
         currentConditions.timeZone
     );
     gmtime_r(&sunriseTimestamp, &timeData);
-    std::vector<char> sunrise;
-    sunrise.reserve(9);
-    strftime(sunrise.data(), sunrise.size(), "%I:%M %p", &timeData);
+    std::array<char, 9> sunriseBuf;
+    strftime(sunriseBuf.data(), sunriseBuf.size(), "%I:%M %p", &timeData);
+    std::string sunrise(sunriseBuf.data());
     if (sunrise.front() == '0')
     {
-        sunrise.erase(sunrise.cbegin());
+        sunrise.erase(sunrise.begin());
     }
     uint16_t sunriseW, sunriseH;
-    std::tie(sunriseW, sunriseH) = getTextDimensions(sunrise.data());
+    std::tie(sunriseW, sunriseH) = getTextDimensions(sunrise);
     auto sunriseIcon = icon::Icon(mDisplay, icon::cSunriseIconName);
     const size_t sunriseStartY = currentTempY + sunriseH + sunTextMarginY;
     static constexpr size_t sunriseIconSize = 50;
@@ -225,7 +225,7 @@ void Renderer::drawCurrentConditions(
     const size_t sunriseTextX = sunriseIconX + sunriseIconSize + sunTextXMargin;
     const size_t sunriseTextY = sunriseIconY + ((sunriseIconSize - sunriseH) / 2) + sunriseH - dataIconMarginY;
     mDisplay.setCursor(sunriseTextX, sunriseTextY);
-    mDisplay.println(sunrise.data());
+    mDisplay.println(sunrise.c_str());
 
     // Today's sunset
     auto sunsetTimestamp = timeutils::localTime(
@@ -233,12 +233,12 @@ void Renderer::drawCurrentConditions(
         currentConditions.timeZone
     );
     gmtime_r(&sunsetTimestamp, &timeData);
-    std::vector<char> sunset;
-    sunset.reserve(9);
-    strftime(sunset.data(), sunset.size(), "%I:%M %p", &timeData);
+    std::array<char, 9> sunsetBuf;
+    strftime(sunsetBuf.data(), sunsetBuf.size(), "%I:%M %p", &timeData);
+    std::string sunset(sunsetBuf.data());
     if (sunset.front() == '0')
     {
-        sunset.erase(sunset.cbegin());
+        sunset.erase(sunset.begin());
     }
     uint16_t sunsetW, sunsetH;
     std::tie(sunsetW, sunsetH) = getTextDimensions(sunset.data());
@@ -250,7 +250,7 @@ void Renderer::drawCurrentConditions(
     const size_t sunsetTextX = sunsetIconX + sunsetIconSize + sunTextXMargin;
     const size_t sunsetTextY = sunsetIconY + ((sunsetIconSize - sunsetH) / 2) + sunsetH - dataIconMarginY;
     mDisplay.setCursor(sunsetTextX, sunsetTextY);
-    mDisplay.println(sunset.data());
+    mDisplay.println(sunset.c_str());
 
     // Current humidity
     static constexpr size_t humidityIconMarginY = 2;
