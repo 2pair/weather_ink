@@ -8,7 +8,9 @@
 #include "TimeUtils.h"
 
 class Inkplate;
-class Environment;
+namespace environment {
+    struct Environment;
+}
 
 
 constexpr uint32_t cInterruptResetCode = 0xFEA28EE5;
@@ -31,7 +33,7 @@ class UserConfig
         UserConfig(
             Inkplate& display,
             const gpio_num_t buttonPin,
-            const Environment& env
+            const environment::Environment& env
         );
         ~UserConfig();
 
@@ -77,7 +79,7 @@ class UserConfig
         };
 
         Inkplate& mDisplay;
-        const Environment& cEnv;
+        const environment::Environment& cEnv;
         std::vector<std::string> mLocations;
         const gpio_num_t mButtonPin;
 

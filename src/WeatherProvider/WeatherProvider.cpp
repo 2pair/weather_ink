@@ -3,20 +3,19 @@
 #include "../DailyWeather.h"
 #include "../SdCard.h"
 #include "../Network.h"
+#include "../Environment.h"
 
 
 using namespace weatherprovider;
 
 WeatherProvider::WeatherProvider(
-    const float latitude,
-    const float longitude,
-    const std::string& city,
+    const environment::Location& location,
     const std::string& apiKey,
     const bool metricUnits
 )
-    :   mLatitude(latitude),
-        mLongitude(longitude),
-        mCity(city),
+    :   mLatitude(location.latitude),
+        mLongitude(location.longitude),
+        mCity(location.name),
         mApiKey(apiKey),
         mMetricUnits(metricUnits)
 {

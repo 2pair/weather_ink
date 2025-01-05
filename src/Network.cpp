@@ -8,6 +8,7 @@
 #include <esp_sntp.h>
 
 #include "TimeUtils.h"
+#include "Environment.h"
 
 
 using namespace network;
@@ -17,7 +18,7 @@ bool connectionActive;
 uint8_t connectionAttempts;
 static constexpr uint8_t cMaxConnectionAttempts = 5;
 
-Network::Network(const std::string& ssid, const std::string& pass)
+Network::Network(const environment::Network& networkInfo)
 {
     connectionAttempts = 0;
     WiFi.mode(WIFI_MODE_NULL);
@@ -26,7 +27,7 @@ Network::Network(const std::string& ssid, const std::string& pass)
     WiFi.mode(WIFI_STA);
     WiFi.setSleep(false);
     mEventId = WiFi.onEvent(handleWiFiEvent);
-    WiFi.begin(ssid.c_str(), pass.c_str());
+    WiFi.begin(networkInfo.ssid, networkInfo.pass);
     connectionActive = true;
     waitForConnection(cSecondsPerMinute);
     if (isConnected())

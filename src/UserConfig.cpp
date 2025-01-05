@@ -31,7 +31,7 @@ void IRAM_ATTR userconfig::wakeupCallback(void* configClass)
 UserConfig::UserConfig(
     Inkplate& display,
     const gpio_num_t buttonPin,
-    const Environment& env
+    const environment::Environment& env
 )
     :   mDisplay(display),
         cEnv(env),
@@ -90,11 +90,11 @@ bool UserConfig::getUseMetric() const
 
 void UserConfig::populateLocations()
 {
-    mLocations = GetLocationsFromFile("/env.json", mDisplay);
-    auto itr = std::find(mLocations.cbegin(), mLocations.cend(), std::string(cEnv.city));
+    mLocations = environment::GetLocationsFromFile("/env.json", mDisplay);
+    auto itr = std::find(mLocations.cbegin(), mLocations.cend(), std::string(cEnv.location.name));
     if (itr == mLocations.cend())
     {
-        log_w("Current city %s not in json list, defaulting index to 0", cEnv.city);
+        log_w("Current city %s not in json list, defaulting index to 0", cEnv.location.name);
         std::string locs;
         for (auto& loc : mLocations)
         {

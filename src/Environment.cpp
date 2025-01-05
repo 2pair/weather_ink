@@ -14,31 +14,23 @@
 #include "UserConfig.h"
 
 
-void setDefaultEnvironment(Environment& env)
+using namespace environment; 
+
+void environment::setDefaultEnvironment(Environment& env)
 {
     log_d("Setting default environment.");
-    strlcpy(env.city, cCity, cCityLength);
-    env.latitude = cLatitude;
-    env.longitude = cLongitude;
-    strlcpy(env.ssid, cSsid, cSsidLength);
-    strlcpy(env.pass, cPass, cPassLength);
-    strlcpy(env.provider, cProvider, cProviderLength);
-    if (strcmp(env.provider, "OpenWeatherMap") == 0)
-    {
-        strlcpy(env.apiKey, cApiKeyOpenWeatherMap, cApiKeyLength);
-    }
-    else if (strcmp(env.provider, "WeatherApi") == 0)
-    {
-        strlcpy(env.apiKey, cApiKeyWeatherApi, cApiKeyLength);
-    }
-    else {
-        log_e("No API key provided!");
-    }
+    strlcpy(env.location.name, cCity, cCityLength);
+    env.location.latitude = cLatitude;
+    env.location.longitude = cLongitude;
+    strlcpy(env.network.ssid, cSsid, cSsidLength);
+    strlcpy(env.network.pass, cPass, cPassLength);
+    strlcpy(env.provider.name, cProvider, cProviderLength);
+    strlcpy(env.provider.apiKey, cApiKey, cApiKeyLength);
     env.fakeApiUpdates = cFakeApiUpdates;
     env.metricUnits = cMetricUnits;
 }
 
-void setEnvironmentFromFile(
+void environment::setEnvironmentFromFile(
     Environment& env,
     const std::string& filename,
     Inkplate& display,
@@ -71,28 +63,17 @@ void setEnvironmentFromFile(
 
     log_d("Network and API configuration will be re-read from SD");
     // Always re-read these critical elements
-    std::string ssid = envFile["ssid"] | cSsid;
-    strlcpy(env.ssid, ssid.c_str(), cSsidLength);
-    std::string pass = envFile["pass"] | cPass;
-    strlcpy(env.pass, pass.c_str(), cPassLength);
+    std::string ssid = envFile["networks"][0]["ssid"] | cSsid;
+    strlcpy(env.network.ssid, ssid.c_str(), cSsidLength);
+    std::string pass = envFile["networks"][0]["pass"] | cPass;
+    strlcpy(env.network.pass, pass.c_str(), cPassLength);
 
     env.fakeApiUpdates = envFile["fakeApiUpdates"] | cFakeApiUpdates;
-    std::string provider = envFile["primaryProvider"] | cProvider;
-    if (provider == std::string((const char*)F("OpenWeatherMap")))
-    {
-        std::string apiKey = envFile["apiKeyOpenWeatherMap"] | cApiKeyOpenWeatherMap;
-        strlcpy(env.apiKey, apiKey.c_str(), cApiKeyLength);
-        strlcpy(env.provider, provider.c_str(), cProviderLength);
-    }
-    else if (provider == std::string((const char*)F("WeatherApi")))
-    {
-        std::string apiKey = envFile["apiKeyWeatherApi"] | cApiKeyWeatherApi;
-        strlcpy(env.apiKey, apiKey.c_str(), cApiKeyLength);
-        strlcpy(env.provider, provider.c_str(), cProviderLength);
-    }
-    else {
-        log_w("Unknown provider: %s", env.provider);
-    }
+    std::string provider = envFile["providers"][0]["name"] | cProvider;
+    strlcpy(env.provider.name, provider.c_str(), cProviderLength);
+    std::string apiKey = envFile["providers"][0]["apiKey"] | cApiKey;
+    strlcpy(env.provider.apiKey, apiKey.c_str(), cApiKeyLength);
+    log_d("Provider set to: %s", env.provider);
 
     if (!userConfig.configUpdated())
     {
@@ -110,15 +91,15 @@ void setEnvironmentFromFile(
             {
                 log_w("given location index is out of bounds, using default city.");
                 city = cCity;
-                env.latitude = cLatitude;
-                env.longitude = cLongitude;
+                env.location.latitude = cLatitude;
+                env.location.longitude = cLongitude;
             }
             else
             {
                 auto location = locations[locationIndex];
                 city = location["city"] | cCity;
-                env.latitude = location["latitude"] | cLatitude;
-                env.longitude = location["longitude"] | cLongitude;
+                env.location.latitude = location["latitude"] | cLatitude;
+                env.location.longitude = location["longitude"] | cLongitude;
                 log_i("city changed to %s at index %d", city.c_str(), locationIndex);
                 if (
                     !(location.containsKey("city")
@@ -129,7 +110,7 @@ void setEnvironmentFromFile(
                     log_w("Location object was missing one or more required keys");
                 }
             }
-            strlcpy(env.city, city.c_str(), cCityLength);
+            strlcpy(env.location.name, city.c_str(), cCityLength);
         }
 
         if (userConfig.useMetricUpdated())
@@ -143,29 +124,70 @@ void setEnvironmentFromFile(
     log_d("Calculated new CRC for environment data: %x", env.crc);
 }
 
-std::vector<std::string> GetLocationsFromFile(
+std::vector<std::string> environment::GetListFromFile(
     const std::string& filename,
+    const std::string& listName,
+    const std::string& defaultItem,
     Inkplate& display
 )
 {
-    std::vector<std::string> locations;
+    std::vector<std::string> items;
     sdcard::SdCard sdCard(display);
     JsonDocument envFile;
     if (sdCard.readJsonFile(envFile, filename))
     {
-        const JsonArray& jsonLocations = envFile["locations"];
-        log_d("locations list has %d items", jsonLocations.size());
-        for (size_t i=0; i<jsonLocations.size(); i++)
+        const JsonArray& jsonItems = envFile[listName];
+        log_d("%s list has %d items", listName.c_str(), jsonItems.size());
+        for (size_t i=0; i<jsonItems.size(); i++)
         {
-            const std::string city = jsonLocations[i]["city"];
-            locations.emplace_back(city);
+            const std::string item = jsonItems[i]["name"];
+            items.emplace_back(item);
         }
     }
-    if (locations.empty())
+    if (items.empty())
     {
         // If the json file is not setup correctly
-        log_d("json list is empty, seeding with default city, %s", cCity);
-        locations.emplace_back(cCity);
+        log_d("json list is empty, seeding with default value, %s", defaultItem);
+        items.emplace_back(defaultItem);
     }
-    return locations;
+    return items;
+}
+
+std::vector<std::string> environment::GetProvidersFromFile(
+    const std::string& filename,
+    Inkplate& display
+)
+{
+    return GetListFromFile(
+        filename,
+        "providers",
+        cSsid,
+        inkplate
+    );
+}
+
+std::vector<std::string> environment::GetNetworksFromFile(
+    const std::string& filename,
+    Inkplate& display
+)
+{
+    return GetListFromFile(
+        filename,
+        "networks",
+        cProvider,
+        inkplate
+    );
+}
+
+std::vector<std::string> environment::GetLocationsFromFile(
+    const std::string& filename,
+    Inkplate& display
+)
+{
+    return GetListFromFile(
+        filename,
+        "locations",
+        cCity,
+        inkplate
+    );
 }

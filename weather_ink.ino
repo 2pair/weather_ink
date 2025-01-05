@@ -27,7 +27,7 @@ constexpr auto cButtonPin = GPIO_NUM_36;
 constexpr uint32_t cMinSleepTimeSecs = 15;
 
 Inkplate gDisplay(INKPLATE_3BIT);
-RTC_NOINIT_ATTR Environment gEnv;
+RTC_NOINIT_ATTR environment::Environment gEnv;
 RTC_NOINIT_ATTR weather::Weather gWeather(gDisplay);
 // Stores if the MCU was restarted by our ISR so that
 // we can differentiate between a manual call to esp_restart and a watchdog timeout
@@ -42,7 +42,7 @@ void IRAM_ATTR buttonReset(void*);
 
 void setup()
 {
-    Serial.begin(115200);//921600
+    Serial.begin(115200);
     // Very long initial timeout to safeguard against program hanging at any point
     esp_task_wdt_init(4 * cSecondsPerMinute, true);
     enableLoopWDT();
@@ -64,7 +64,7 @@ void setup()
 
     userconfig::UserConfig userConfig(gDisplay, cButtonPin, gEnv);
     userConfig.getConfigFromUser();
-    setEnvironmentFromFile(gEnv, "/env.json", gDisplay, userConfig);
+    environment::setEnvironmentFromFile(gEnv, "/env.json", gDisplay, userConfig);
 
     if (!gDisplay.sdCardInit())
     {
@@ -84,15 +84,15 @@ void loop()
 {
     uint32_t sleepTimeSecs = 0;
     bool weather_updated = false;
-    log_d("Updating weather for %s", gEnv.city);
-    if (std::string(gEnv.provider) == "WeatherApi")
+    log_d("Updating weather for %s", gEnv.location.name);
+    if (std::string(gEnv.provider.name) == "WeatherApi")
     {
-        weatherprovider::WeatherApi provider(gEnv.latitude, gEnv.longitude, gEnv.city, gEnv.apiKey, gEnv.metricUnits);
+        weatherprovider::WeatherApi provider(gEnv.location, gEnv.provider.apiKey, gEnv.metricUnits);
         std::tie(weather_updated, sleepTimeSecs) = updateWeather(gWeather, provider);
     }
     else // Only other provider is OpenWeatherMap
     {
-        weatherprovider::OpenWeatherMap provider(gEnv.latitude, gEnv.longitude, gEnv.city, gEnv.apiKey, gEnv.metricUnits);
+        weatherprovider::OpenWeatherMap provider(gEnv.location, gEnv.provider.apiKey, gEnv.metricUnits);
         std::tie(weather_updated, sleepTimeSecs) = updateWeather(gWeather, provider);
     }
 
@@ -113,7 +113,7 @@ void loop()
 
 std::pair<bool, uint32_t> updateWeather(weather::Weather& weatherData, const weatherprovider::WeatherProvider& provider)
 {
-    network::Network connection(gEnv.ssid, gEnv.pass);
+    network::Network connection(gEnv.network);
     // Delay between API calls. 1 minute when reading from SD, minimum 15 minutes otherwise.
     uint32_t sleepTimeSecs =
         gEnv.fakeApiUpdates ? cSecondsPerMinute : std::max(provider.getWeatherUpdateIntervalSeconds(), 15 * cSecondsPerMinute);
@@ -159,7 +159,7 @@ std::pair<bool, uint32_t> updateWeather(weather::Weather& weatherData, const wea
 void draw(const weather::Weather& weatherData)
 {
     renderer::Renderer renderer(gDisplay);
-    renderer.update(weatherData, gEnv.city);
+    renderer.update(weatherData, gEnv.location.name);
     renderer.render();
 }
 

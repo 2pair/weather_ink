@@ -16,6 +16,9 @@ namespace network {
 namespace sdcard {
     class SdCard;
 }
+namespace environment {
+    struct Location;
+}
 
 namespace weatherprovider {
 
@@ -24,9 +27,7 @@ class WeatherProvider
     public:
         WeatherProvider() = delete;
         WeatherProvider(
-            const float latitude,
-            const float longitude,
-            const std::string& city,
+            const environment::Location& location,
             const std::string& apiKey,
             const bool metricUnits);
 

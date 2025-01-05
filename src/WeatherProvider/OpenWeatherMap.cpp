@@ -7,6 +7,7 @@
 
 #include "../DailyWeather.h"
 #include "../TimeUtils.h"
+#include "../Environment.h"
 
 
 using namespace weatherprovider;

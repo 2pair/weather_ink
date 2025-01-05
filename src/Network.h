@@ -5,13 +5,16 @@
 #include <WiFiGeneric.h>
 #include <ArduinoJson.h>
 
+namespace environment {
+  struct Network;
+}
 
 namespace network {
 
 class Network
 {
   public:
-    Network(const std::string& ssid, const std::string& pass);
+    Network(const environment::Network& networkInfo);
 
     ~Network();
 

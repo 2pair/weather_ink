@@ -17,11 +17,9 @@ static constexpr char cPass[] = "";
 static constexpr char cProvider[] = "WeatherApi";
 
 // Your api key
+// https://www.weatherapi.com , register and copy the key provided OR
 // https://openweathermap.org/guide , register and copy the key provided
-static constexpr char cApiKeyOpenWeatherMap[] = "";
-
-// https://www.weatherapi.com , register and copy the key provided
-static constexpr char cApiKeyWeatherApi[] = "";
+static constexpr char cApiKey[] = "";
 
 // If true, read json files from the SD card instead of querying the API
 static constexpr bool cFakeApiUpdates = true;
