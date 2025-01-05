@@ -162,7 +162,7 @@ std::vector<std::string> environment::GetProvidersFromFile(
         filename,
         "providers",
         cSsid,
-        inkplate
+        display
     );
 }
 
@@ -175,7 +175,7 @@ std::vector<std::string> environment::GetNetworksFromFile(
         filename,
         "networks",
         cProvider,
-        inkplate
+        display
     );
 }
 
@@ -188,6 +188,6 @@ std::vector<std::string> environment::GetLocationsFromFile(
         filename,
         "locations",
         cCity,
-        inkplate
+        display
     );
 }
