@@ -63,17 +63,17 @@ void environment::setEnvironmentFromFile(
 
     log_d("Network and API configuration will be re-read from SD");
     // Always re-read these critical elements
-    std::string ssid = envFile["networks"][0]["ssid"] | cSsid;
+    const std::string ssid = envFile["networks"][0]["ssid"] | cSsid;
     strlcpy(env.network.ssid, ssid.c_str(), cSsidLength);
-    std::string pass = envFile["networks"][0]["pass"] | cPass;
+    const std::string pass = envFile["networks"][0]["pass"] | cPass;
     strlcpy(env.network.pass, pass.c_str(), cPassLength);
-
     env.fakeApiUpdates = envFile["fakeApiUpdates"] | cFakeApiUpdates;
-    std::string provider = envFile["providers"][0]["name"] | cProvider;
+
+    const std::string provider = envFile["providers"][0]["name"] | cProvider;
     strlcpy(env.provider.name, provider.c_str(), cProviderLength);
-    std::string apiKey = envFile["providers"][0]["apiKey"] | cApiKey;
+    const std::string apiKey =  envFile["providers"][0]["apiKey"] | cApiKey;
     strlcpy(env.provider.apiKey, apiKey.c_str(), cApiKeyLength);
-    log_d("Provider set to: %s", env.provider);
+    log_d("Provider set to: %s", env.provider.name);
 
     if (!userConfig.configUpdated())
     {
@@ -87,7 +87,7 @@ void environment::setEnvironmentFromFile(
             std::string city;
             const JsonArray& locations = envFile["locations"];
             size_t locationIndex = userConfig.getLocationIndex();
-            if (locationIndex >= locations.size())
+            if (locations.isNull() || locationIndex >= locations.size())
             {
                 log_w("given location index is out of bounds, using default city.");
                 city = cCity;
